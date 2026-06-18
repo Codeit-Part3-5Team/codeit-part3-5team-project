@@ -32,3 +32,6 @@ Thumbs.db
 *.faiss
 *.index
 vector_store/
+
+# NDA: 데이터 폴더 전체 (원본+가공본 모두 PII 포함)
+data/
