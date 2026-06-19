@@ -1,0 +1,63 @@
+# .github/DISCUSSION_TEMPLATE/daily-report.yml
+title: "이름 - 26년 0월 0일 데일리 리포트"
+labels: ["daily-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 📋 데일리 리포트
+        > 제목의 이름과 날짜는 직접 입력해 주세요!
+
+  - type: textarea
+    id: work-done
+    attributes:
+      label: 🛠 작업 내용 및 완료도
+      description: "항목별 작업 내용과 진행률을 입력해 주세요. 행을 추가하거나 삭제해도 됩니다."
+      value: |
+        | 작업 항목 | 진행률 | 비고 |
+        |-----------|--------|------|
+        | 작업 내용 1 | 0% | |
+        | 작업 내용 2 | 0% | |
+        | 작업 내용 3 | 0% | |
+    validations:
+      required: true
+
+  - type: textarea
+    id: collaboration-feedback
+    attributes:
+      label: 🤝 협업 중 제안 / 피드백
+      description: "팀원에 대한 피드백, 프로세스 개선 제안 등을 자유롭게 적어 주세요."
+      placeholder: |
+        - 없음
+    validations:
+      required: false
+
+  - type: textarea
+    id: insights
+    attributes:
+      label: 💡 인사이트 / 문제점
+      description: "작업 중 발견한 기술적 인사이트나 개선이 필요한 문제점을 기재해 주세요."
+      placeholder: |
+        - 없음
+    validations:
+      required: false
+
+  - type: textarea
+    id: collaboration-issues
+    attributes:
+      label: 🚧 협업 이슈
+      description: "커뮤니케이션 단절, 의존성 블로킹 등 협업상 발생한 이슈를 기재해 주세요."
+      placeholder: |
+        - 없음
+    validations:
+      required: false
+
+  - type: textarea
+    id: tomorrow
+    attributes:
+      label: 📌 내일 할 일
+      description: "내일 예정된 작업 목록을 기재해 주세요."
+      placeholder: |
+        - 내일 할 일
+    validations:
+      required: true
