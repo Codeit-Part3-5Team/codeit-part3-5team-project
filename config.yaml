@@ -1,0 +1,27 @@
+# RAG 파이프라인
+retriever_type: "naive_rag"  # naive_rag / agentic_rag
+top_k: 5
+
+# 임베딩
+embedding_model: "text-embedding-3-small"
+
+# 생성 모델
+llm_model: "gpt-5-mini"
+temperature: 0.2
+top_p: 0.9
+max_tokens: 1024
+
+# Ollama (시나리오 A / LLM Judge용)
+ollama_base_url: "http://<GCP_VM_IP>:11434"
+ollama_model: "llama3"
+
+# 대화 메모리
+max_history: 10
+memory:
+  window_size: 5
+
+# 평가
+evaluation:
+  golden_dataset_path: "./golden/golden_dataset.json"
+  sample_size: 60
+  judge_model: "gpt-5-mini"

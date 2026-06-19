@@ -1,0 +1,89 @@
+from utils.config import load_config  # config.yaml 읽기
+# 지금까지 만든 모듈들을 하나로 조립하는 메인 파이프라인
+from backend.generation.generator import generate_answer  # 답변 생성
+from backend.generation.memory import trim_history        # 대화 이력 자르기
+from langchain_core.documents import Document
+import time
+
+
+# 임시 검색 함수 (mock)
+# retrieval이 아직 없어서, Document 리스트를 가짜로 반환한다.
+# 이후 이 함수를 retriever 호출로 교체하면 됨 (이 함수만 갈아끼우면 끝).
+def mock_retrieve(query: str, top_k: int = 5) -> list[Document]:
+    return [
+        Document(
+            page_content="본 사업은 국민연금공단의 이러닝시스템 고도화 사업이며, 총 사업예산은 540,000,000원이다.",
+            metadata={"doc_id": "DOC_001", "page": 1, "score": 0.92},
+        ),
+        Document(
+            page_content="사업 수행 기간은 계약 체결일로부터 6개월로 한다.",
+            metadata={"doc_id": "DOC_001", "page": 3, "score": 0.85},
+        ),
+    ]
+
+# retriever_type에 따라 검색 방식 선택
+# 지금은 naive/agentic 둘 다 mock_retrieve를 쓰지만,
+# 이후 retrieval 오면 각 분기를 실제 retriever 호출로 교체예정
+def retrieve(query: str, config: dict) -> list[Document]:
+    retriever_type = config.get("retriever_type", "naive_rag")
+    top_k = config.get("top_k", 5)
+
+    if retriever_type == "agentic_rag":
+        # 이후 retrieval(agentic) 오면 교체예정
+        return mock_retrieve(query, top_k)
+    else:  # naive_rag (기본)
+        # 이후 retrieval(naive) 오면 교체예정
+        return mock_retrieve(query, top_k)
+
+
+# 프론트와 약속한 인터페이스: get_ai_response(query, history, config) -> dict
+# 전체 흐름: 이력 자르기 → 검색(mock) → 답변 생성 → 약속한 dict로 조립
+def get_ai_response(query: str, history: list[dict] = None, config: dict = None) -> dict:
+    start = time.time()
+    history = history or []
+    config = config or load_config()   # config 없으면 config.yaml에서 로드
+
+    # 1) 대화 이력 자르기 (max_history는 프론트 슬라이더 값, 없으면 기본 10)
+    max_history = config.get("max_history", 10)
+    trimmed_history = trim_history(history, max_history)
+    # 참고: trimmed_history는 이후 (후속질의/v2 프롬프트) generator에 넘길 예정.
+    #       지금은 자르기 동작까지만 연결해 둠.
+
+    # 2) 검색 (지금은 mock, 이후 retriever로 교체)
+    #    config로 naive/agentic 분기는 추후 추가 예정 (지금은 자리만)
+    docs = retrieve(query, config)     # retriever_type에 따라 분기
+
+    # 3) 답변 생성 (gpt-5-mini)
+    answer, tokens_used = generate_answer(query, docs)
+
+    # 4) 약속한 dict 형식(5개 키)으로 조립
+    sources = [
+        {
+            "doc_id": d.metadata.get("doc_id"),
+            "page": d.metadata.get("page"),
+            "score": d.metadata.get("score"),
+        }
+        for d in docs
+    ]
+    retrieved_chunks = [d.page_content for d in docs]
+    elapsed_sec = round(time.time() - start, 2)
+
+    return {
+        "answer": answer,
+        "sources": sources,
+        "retrieved_chunks": retrieved_chunks,
+        "elapsed_sec": elapsed_sec,
+        "tokens_used": tokens_used,
+    }
+
+
+# 직접 실행 시 전체 파이프라인 테스트
+# 실행: (backend 폴더에서) python -m pipeline
+if __name__ == "__main__":
+    result = get_ai_response("이 사업 예산이랑 기간 알려줘", history=[], config={"top_k": 5})
+    print("=== get_ai_response 결과 ===")
+    print("answer:", result["answer"])
+    print("sources:", result["sources"])
+    print("chunks 수:", len(result["retrieved_chunks"]))
+    print("elapsed_sec:", result["elapsed_sec"])
+    print("tokens_used:", result["tokens_used"])
