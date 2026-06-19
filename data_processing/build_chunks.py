@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 # =====================================================================
 #  입찰메이트 RFP RAG — 베이스라인 청킹 (DE: 도혁)
 #  입력 : data/processed/parsed_documents_v2.json (마스킹본이면 masked json으로 교체)
@@ -16,7 +16,7 @@ import unicodedata
 # --- CFG -------------------------------------------------------------
 CFG = {
     "in_path":   "data/processed/masked_documents_v2.json",
-    "csv_path":  "data/raw/중급 프로젝트/원본 데이터/data_list.csv",  # 금액 대조용
+    "csv_path":  "data/raw/중급 프로젝트/원본 데이터/data_list.csv",  # 금액 대조 + 메타요약
     "out_path":  "data/processed/chunks_v1.json",
     "min_tokens": 512,
     "max_tokens": 1024,
@@ -210,6 +210,74 @@ def load_image_budget_doc_ids(docs):
     print(f"[info] has_image_budget 플래그: {len(flagged)}건 {sorted(flagged)}")
     return flagged
 
+# --- 메타요약 청크: csv 구조화 메타 → 문서당 1개 검색 청크 ----------
+def build_meta_chunks(docs, img_budget):
+    """csv 메타(사업명·금액·발주기관·일정·요약)를 문서당 1개 자연어 청크로.
+    이미지금액 31건도 csv엔 금액이 있어 예산 질문을 이 청크로 커버."""
+    if not os.path.exists(CFG["csv_path"]):
+        print("[warn] csv 없음 → meta_summary 청크 생략")
+        return []
+    rows = []
+    with open(CFG["csv_path"], encoding="utf-8-sig") as f:
+        for row in csv.DictReader(f):
+            rows.append({(k or "").strip(): (v or "").strip() for k, v in row.items()})
+    name2row = {}
+    for r in rows:
+        fn = r.get("파일명") or r.get("파일 명") or ""
+        if fn:
+            name2row[unicodedata.normalize("NFC", fn)] = r
+
+    def g(r, *keys):
+        for k in keys:
+            if r.get(k):
+                return r[k]
+        return ""
+
+    out = []
+    for d in docs:
+        fn = unicodedata.normalize("NFC", os.path.splitext(d["file_name"])[0])
+        row = None
+        for k, r in name2row.items():
+            if fn in k or k in fn:
+                row = r
+                break
+        if not row:
+            continue
+        name   = g(row, "사업명")
+        amt    = g(row, "사업금액", "사업 금액").split(".")[0]
+        org    = g(row, "발주기관", "발주 기관")
+        opened = g(row, "공개일자", "공개 일자")
+        ddl    = g(row, "입찰참여마감일", "입찰 참여 마감일")
+        summ   = g(row, "사업요약", "사업 요약")
+        amt_disp = f"{int(amt):,}원" if amt.isdigit() else (amt or "정보없음")
+
+        # 자연어 요약문 (검색 친화적으로 핵심 키워드 포함)
+        parts = [f"[사업개요] 사업명: {name}", f"발주기관: {org}",
+                 f"사업금액(예산): {amt_disp}"]
+        if opened: parts.append(f"공개일자: {opened}")
+        if ddl:    parts.append(f"입찰참여 마감일: {ddl}")
+        if summ:   parts.append(f"사업요약:\n{summ}")
+        content = "\n".join(parts).strip()
+
+        out.append({
+            "page_content": content,
+            "metadata": {
+                "doc_id": d["doc_id"],
+                "file_name": d["file_name"],
+                "section": "메타요약",
+                "content_type": "meta_summary",
+                "chunk_index": -1,                 # 문서 대표 청크
+                "page": None,
+                "token_count": n_tokens(content),
+                "has_image_budget": d["doc_id"] in img_budget,
+                "pii_masked": d.get("pii_masked"),
+                "budget_amount": int(amt) if amt.isdigit() else None,  # 필터링용 정수
+            },
+        })
+    print(f"[info] meta_summary 청크: {len(out)}건 (이미지금액 31건 예산 커버 포함)")
+    return out
+
+
 # --- 메인 -----------------------------------------------------------
 def main():
     docs = json.load(open(CFG["in_path"], encoding="utf-8"))
@@ -289,13 +357,17 @@ def main():
         cnt[did] = c["metadata"]["chunk_index"] + 1
 
     os.makedirs(os.path.dirname(CFG["out_path"]), exist_ok=True)
+    # --- 메타요약 청크 추가 (문서당 1개, csv 메타 기반) ---
+    meta_chunks = build_meta_chunks(docs, img_budget)
+    chunks = meta_chunks + chunks       # 메타요약을 앞에 배치
     json.dump(chunks, open(CFG["out_path"], "w", encoding="utf-8"),
               ensure_ascii=False, indent=2)
 
     # 요약
     n_tbl = sum(1 for c in chunks if c["metadata"]["content_type"] == "table")
+    n_meta = sum(1 for c in chunks if c["metadata"]["content_type"] == "meta_summary")
     toks = [c["metadata"]["token_count"] for c in chunks]
-    print(f"\n[done] chunks: {len(chunks)}  (table {n_tbl} / text {len(chunks)-n_tbl})")
+    print(f"\n[done] chunks: {len(chunks)}  (meta {n_meta} / table {n_tbl} / text {len(chunks)-n_tbl-n_meta})")
     print(f"  토큰 평균 {sum(toks)//len(toks)} / 최소 {min(toks)} / 최대 {max(toks)}")
     print(f"  문서당 평균 {len(chunks)//len(docs)}청크")
     print(f"  저장: {CFG['out_path']}")
