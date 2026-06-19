@@ -1,0 +1,44 @@
+name: 🔬 실험 제안
+description: 새로운 실험 아이디어를 제안합니다.
+labels: ["experiment"]
+body:
+  - type: input
+    id: exp_name
+    attributes:
+      label: 실험명
+      placeholder: "예: YOLOv8s + Mosaic 증강 비교"
+    validations:
+      required: true
+
+  - type: textarea
+    id: hypothesis
+    attributes:
+      label: 가설
+      description: 왜 이 실험이 성능을 개선할 것이라 생각하나요?
+    validations:
+      required: true
+
+  - type: textarea
+    id: plan
+    attributes:
+      label: 실험 계획
+      description: 변경할 설정·파라미터·데이터 등을 기술하세요.
+
+  - type: dropdown
+    id: assignee
+    attributes:
+      label: 담당자
+      options:
+        - 승준
+        - 도혁
+        - 소원
+        - 호정
+        - 찬우
+    validations:
+      required: true
+
+  - type: input
+    id: branch
+    attributes:
+      label: 실험 브랜치
+      placeholder: "exp/<이름>-<실험명>"
