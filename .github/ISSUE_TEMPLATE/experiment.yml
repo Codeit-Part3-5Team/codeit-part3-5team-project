@@ -6,7 +6,7 @@ body:
     id: exp_name
     attributes:
       label: 실험명
-      placeholder: "예: YOLOv8s + Mosaic 증강 비교"
+      placeholder: "예: 골든 데이터셋 + LLM-as-a-Judge 모델 성능 평가"
     validations:
       required: true
 
@@ -29,11 +29,11 @@ body:
     attributes:
       label: 담당자
       options:
-        - 승준
+        - 민재
         - 도혁
-        - 소원
-        - 호정
-        - 찬우
+        - 아인
+        - 재헌
+        - 수민
     validations:
       required: true
 
