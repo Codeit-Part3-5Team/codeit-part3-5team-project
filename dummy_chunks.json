@@ -1,0 +1,28 @@
+[
+  {
+    "doc_id": "DOC_001",
+    "doc_metadata": {
+      "agency": "국민연금공단",
+      "agency_aliases": [
+        "국민연금",
+        "NPS"
+      ],
+      "project_name": "이러닝시스템 고도화 사업",
+      "budget_krw": 540000000
+    },
+    "chunks": [
+      {
+        "chunk_id": "DOC_001_C001",
+        "text": "국민연금공단 이러닝시스템 사업 예산은 5억 4천만원이다.",
+        "section": "1. 사업개요",
+        "page": 1
+      },
+      {
+        "chunk_id": "DOC_001_C002",
+        "text": "콘텐츠 개발 관리 요구사항은 다음과 같다.",
+        "section": "2. 요구사항",
+        "page": 3
+      }
+    ]
+  }
+]
