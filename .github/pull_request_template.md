@@ -40,9 +40,13 @@ python scripts/train.py --config experiments/baseline/config.yaml --epochs 1
 
 | 항목 | 이전 | 이후 |
 |------|------|------|
-| mAP@0.5 | - | - |
-| mAP@0.5:0.95 | - | - |
-| 추론 속도 (ms/img) | - | - |
+| Hit Rate @5 | - | - |
+| MRR (Mean Reciprocal Rank) | - | - |
+| Context Recall | - | - |
+| Context Precision | - | - |
+| Faithfulness | - | - |
+| Answer Relevance | - | - |
+| RAGAS-Score | - | - |
 
 > 가중치 파일 위치: (Google Drive 링크 또는 Kaggle Dataset 경로)
 
