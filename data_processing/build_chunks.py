@@ -15,7 +15,7 @@ import unicodedata
 
 # --- CFG -------------------------------------------------------------
 CFG = {
-    "in_path":   "data/processed/masked_documents_v2.json",
+    "in_path":   "data/processed/masked_documents_v3.json",
     "csv_path":  "data/raw/중급 프로젝트/원본 데이터/data_list.csv",  # 금액 대조 + 메타요약
     "out_path":  "data/processed/chunks_v1.json",
     "min_tokens": 512,
