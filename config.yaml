@@ -12,7 +12,7 @@ top_p: 0.9
 max_tokens: 1024
 
 # Ollama (시나리오 A / LLM Judge용)
-ollama_base_url: "http://<GCP_VM_IP>:11434"
+
 ollama_model: "llama3"
 
 # 대화 메모리
