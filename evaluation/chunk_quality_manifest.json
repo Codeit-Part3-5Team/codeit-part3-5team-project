@@ -1,0 +1,40 @@
+{
+  "generated_at": "2026-06-22 17시 17분 31초 (KST)",
+  "target_file": "data\\processed\\chunks_v1.json",
+  "file_sha256": "e9732be4a8f80852fc681f70aba429702f888d30a047aba4e252fdb4c09fc859",
+  "verdict": "PASS",
+  "total_chunks": 14606,
+  "chunk_breakdown": {
+    "meta_summary": 100,
+    "table": 9793,
+    "text": 4713
+  },
+  "checks": {
+    "1_doc_internal_duplicates": 0,
+    "2_high_chunk_docs_reference": [
+      [
+        "DOC_093",
+        471
+      ],
+      [
+        "DOC_094",
+        321
+      ]
+    ],
+    "3_table_over_segmentation": [],
+    "4_pua_broken_chars": 0,
+    "5_empty_chunks": 0,
+    "5_tiny_chunks": 27,
+    "6_token_limit_violations": 0
+  },
+  "reference_stats": {
+    "person_name_related_chunks_upper_estimate": 1689,
+    "note": "키워드(담당자/책임자/문의처 등) 기반 상한 추정치. 키워드가 있어도 인명이 없을 수 있어 실제보다 많게 잡힘. 정확한 인명 카운트는 NER 도입 시에만 가능."
+  },
+  "limitations": [
+    "과소 청크(<5토큰) 27건은 검색 영향 경미하여 허용",
+    "[2] 청크 많은 문서는 원본 표 행 수 대비 정상(큰 문서)이면 FAIL 아님",
+    "과세분화 판정 기준: 표 청크 수 > 원본 표 행 수 × 1.2",
+    "인명 노출 카운트는 키워드 기반 추정 — 정규식으론 인명 자동 탐지 불가(NER 필요)"
+  ]
+}

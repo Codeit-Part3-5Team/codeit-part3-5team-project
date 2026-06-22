@@ -9,6 +9,31 @@
 #    - "전체 공백 제거" 금지 → 숫자 사이 제한된 separator만 허용 (false positive 방지)
 #      (실측: 발급번호 2016020100000 이 010 휴대폰으로 오탐되는 것 확인 → 경계·길이 검사 필수)
 #    - 정책 3분류: restricted(마스킹) / allowed_public(허용) / unknown(검토)
+#
+# ---------------------------------------------------------------------
+#  [담당자 인명 처리 정책] (2026-06-22 팀 결정 / PM 정책 확장)
+#    담당자 인명은 "마스킹하지 않음" (공개 유지).
+#
+#    법적 근거 — 공공기관의 정보공개에 관한 법률 제9조 제1항 제6호 단서:
+#      비공개 대상이 되는 개인정보라도 다음은 제외(=공개 가능):
+#        라. 직무를 수행한 공무원의 성명·직위
+#        마. 공개하는 것이 공익을 위하여 필요한 경우로서 법령에 따라
+#            국가/지자체가 업무의 일부를 위탁·위촉한 개인의 성명·직업
+#
+#    적용 논리:
+#      RFP 문서 내 담당자 정보는 공공 조달 절차의 공식 문의처(PoC)로서,
+#      기관이 업무 연락 목적으로 공고에 공표한 정보임. PIPA상 개인정보에
+#      해당하나, 본인의 직무 수행과 관련해 공표된 정보로 한정 활용하므로
+#      마스킹하지 않음.
+#
+#    대비 — 개인 사적 정보는 마스킹 유지:
+#      개인 휴대폰(010), 사적 이메일(naver/gmail 등)은 restricted로 마스킹.
+#      즉 "기관 업무용 = 공개 / 개인 사적 = 마스킹" 기준.
+#
+#    한계 — 인명 자동 탐지 불가:
+#      정규식으로는 사람 이름("김철수")과 일반 명사를 구분할 수 없음(NER 필요).
+#      따라서 본 모듈은 인명을 "탐지/마스킹 대상에서 제외"할 뿐,
+#      인명 노출 청크 수의 정확한 카운트는 NER 도입 시에만 가능(현재는 추정).
 # =====================================================================
 import re
 import unicodedata
@@ -23,15 +48,8 @@ POLICY_VERSION = "v3"
 
 # 사적 이메일 도메인 (restricted)
 RESTRICTED_EMAIL_DOMAINS = {
-    "gmail.com",
-    "naver.com",
-    "daum.net",
-    "hanmail.net",
-    "nate.com",
-    "kakao.com",
-    "outlook.com",
-    "hotmail.com",
-    "yahoo.com",
+    "gmail.com", "naver.com", "daum.net", "hanmail.net",
+    "nate.com", "kakao.com", "outlook.com", "hotmail.com", "yahoo.com",
 }
 
 # 허용 기관 도메인 (allowed_public) — suffix가 아니라 검토된 도메인 단위 관리
@@ -41,9 +59,9 @@ ALLOWED_PUBLIC_EMAIL_SUFFIXES = (".go.kr", ".re.kr", ".ac.kr", ".or.kr", ".kr")
 # 전수 검토 완료된 공기업/기관 도메인 (.com/.org 라 suffix로 못 잡지만 공식 도메인)
 # ※ 검토 근거: korail.com=한국철도공사, kiria.org=한국로봇산업진흥원, 7luck.com=그랜드코리아레저(공기업)
 APPROVED_PUBLIC_DOMAINS = {
-    "korail.com",  # 한국철도공사
-    "kiria.org",  # 한국로봇산업진흥원
-    "7luck.com",  # 그랜드코리아레저(GKL) 공기업
+    "korail.com",   # 한국철도공사
+    "kiria.org",    # 한국로봇산업진흥원
+    "7luck.com",    # 그랜드코리아레저(GKL) 공기업
 }
 # 단, suffix만으로 자동 허용하지 않고 분류용으로만 사용. 미검토 도메인은 unknown(review)로.
 
@@ -67,34 +85,25 @@ def normalize(text: str) -> str:
 
 # --- PII 탐지 패턴 (검증 전용, 공격적이되 경계·길이로 false positive 차단) ---
 # 핵심: (?<!\d) 앞 숫자 없음 / (?!\d) 뒤 숫자 없음 → 긴 숫자열 일부 오탐 방지
-SEP = r"[\s\-.]{0,2}"  # 숫자 그룹 사이 허용 separator (제한적)
+SEP = r"[\s\-.]{0,2}"   # 숫자 그룹 사이 허용 separator (제한적)
 
 PATTERNS = {
     # restricted (마스킹 대상)
-    "mobile": re.compile(
-        r"(?<!\d)01[016789]" + SEP + r"\d{3,4}" + SEP + r"\d{4}(?!\d)"
-    ),
-    "ssn": re.compile(r"(?<!\d)\d{6}-[1-4]\d{6}(?!\d)"),  # 주민번호(뒷자리 1~4)
-    "biz_no": re.compile(r"(?<!\d)\d{3}-\d{2}-\d{5}(?!\d)"),  # 사업자등록번호
-    "corp_no": re.compile(r"(?<!\d)\d{6}-\d{7}(?!\d)"),  # 법인등록번호
-    "account": re.compile(
-        r"(?<!\d)\d{2,6}-\d{2,6}-\d{2,6}-?\d{0,6}(?!\d)"
-    ),  # 계좌(느슨, 검토 플래그용)
+    "mobile":   re.compile(r"(?<!\d)01[016789]" + SEP + r"\d{3,4}" + SEP + r"\d{4}(?!\d)"),
+    "ssn":      re.compile(r"(?<!\d)\d{6}-[1-4]\d{6}(?!\d)"),           # 주민번호(뒷자리 1~4)
+    "biz_no":   re.compile(r"(?<!\d)\d{3}-\d{2}-\d{5}(?!\d)"),          # 사업자등록번호
+    "corp_no":  re.compile(r"(?<!\d)\d{6}-\d{7}(?!\d)"),               # 법인등록번호
+    "account":  re.compile(r"(?<!\d)\d{2,6}-\d{2,6}-\d{2,6}-?\d{0,6}(?!\d)"),  # 계좌(느슨, 검토 플래그용)
 }
 
 EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
-LANDLINE_RE = re.compile(r"(?<!\d)0\d{1,2}-\d{3,4}-\d{4}(?!\d)")  # 유선전화(allowed)
-MASK_TOKEN_RE = re.compile(
-    r"\[(전화번호|이메일|휴대폰|주민등록번호|계좌번호|법인등록번호|사업자등록번호)\]"
-)
-
+LANDLINE_RE = re.compile(r"(?<!\d)0\d{1,2}-\d{3,4}-\d{4}(?!\d)")   # 유선전화(allowed)
+MASK_TOKEN_RE = re.compile(r"\[(전화번호|이메일|휴대폰|주민등록번호|계좌번호|법인등록번호|사업자등록번호)\]")
 
 # 휴대폰 검증: 패턴 매치 후 숫자만 추출해 정확히 11자리인지 재확인
 def is_real_mobile(s: str) -> bool:
     digits = re.sub(r"\D", "", s)
-    return len(digits) == 11 and digits.startswith(
-        ("010", "011", "016", "017", "018", "019")
-    )
+    return len(digits) == 11 and digits.startswith(("010", "011", "016", "017", "018", "019"))
 
 
 def is_dummy_number(s: str) -> bool:
@@ -115,7 +124,7 @@ def classify_email(email: str) -> str:
     domain = email.split("@")[1].lower()
     if domain in RESTRICTED_EMAIL_DOMAINS:
         return "restricted"
-    if domain in APPROVED_PUBLIC_DOMAINS:  # 전수 검토된 공기업 도메인
+    if domain in APPROVED_PUBLIC_DOMAINS:      # 전수 검토된 공기업 도메인
         return "allowed_public"
     if domain.endswith(ALLOWED_PUBLIC_EMAIL_SUFFIXES):
         return "allowed_public"
@@ -129,11 +138,8 @@ def scan_restricted(text: str):
     found = {}
 
     # 휴대폰 (11자리 재확인 + 빈양식 더미 제외)
-    mob = [
-        m.group()
-        for m in PATTERNS["mobile"].finditer(norm)
-        if is_real_mobile(m.group()) and not is_dummy_number(m.group())
-    ]
+    mob = [m.group() for m in PATTERNS["mobile"].finditer(norm)
+           if is_real_mobile(m.group()) and not is_dummy_number(m.group())]
     if mob:
         found["mobile"] = mob
 
@@ -148,11 +154,8 @@ def scan_restricted(text: str):
         found["biz_no"] = biz
 
     # 법인등록번호 (XXXXXX-XXXXXXX, 주민번호로 잡힌 것·더미 제외)
-    corp = [
-        c
-        for c in PATTERNS["corp_no"].findall(norm)
-        if c not in ssn and not is_dummy_number(c)
-    ]
+    corp = [c for c in PATTERNS["corp_no"].findall(norm)
+            if c not in ssn and not is_dummy_number(c)]
     if corp:
         found["corp_no"] = corp
 
