@@ -29,11 +29,13 @@ def build_context(docs: list[Document]) -> str:
     return "\n\n---\n\n".join(blocks)
 
 
-# 질문 + 검색결과 → gpt-5-mini 답변 생성
+# 질문 + 검색결과 + 대화이력 → gpt-5-mini 답변 생성
+# history: 이전 대화 [{"role": "user"/"assistant", "content": "..."}, ...] (이미 trim된 상태로 들어옴)
 # 반환: (답변 텍스트, 사용된 토큰 수)
-def generate_answer(question: str, docs: list[Document]) -> tuple[str, int]:
+def generate_answer(question: str, docs: list[Document], history: list[dict] = None) -> tuple[str, int]:
     system_prompt = load_system_prompt()       # 역할+규칙
     context = build_context(docs)               # 검색결과 → context
+    history = history or []                      # history 없으면 빈 리스트로
 
     # 사용자 메시지: 문서 내용 + 질문을 한 덩어리로 구성
     user_content = (
@@ -42,10 +44,11 @@ def generate_answer(question: str, docs: list[Document]) -> tuple[str, int]:
         f"### 답변:"
     )
 
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_content},
-    ]
+    # messages 구성: system → 이전 대화이력 → 이번 질문 순서로 쌓음
+    # 이전 대화를 system과 이번 질문 사이에 넣어야 gpt가 맥락을 이어받음
+    messages = [{"role": "system", "content": system_prompt}]
+    messages.extend(history)                     # trim된 이전 대화 끼워넣기
+    messages.append({"role": "user", "content": user_content})
 
     answer, tokens_used = call_gpt(messages)
     return answer, tokens_used

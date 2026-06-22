@@ -28,12 +28,13 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     query: str
     history: list[dict] = []
+    max_history: int = 10   # 프론트 슬라이더 값 (없으면 기본 10)
 
 # /chat 엔드포인트 (POST 방식)
-# 프론트에서 query를 받아 get_ai_response를 호출하고, 그 dict를 그대로 JSON으로 응답
+# 프론트에서 query/history/max_history를 받아 get_ai_response 호출 후 dict를 JSON으로 응답
 @app.post("/chat")
 def chat(req: ChatRequest):
-    result = get_ai_response(query=req.query, history=req.history)
+    result = get_ai_response(query=req.query, history=req.history, max_history=req.max_history)
     return result
 
 
@@ -42,3 +43,10 @@ def chat(req: ChatRequest):
 @app.get("/")
 def root():
     return {"status": "ok"}
+
+# 이 파일을 직접 실행하면 uvicorn으로 서버를 띄움
+# 실행: (루트에서) python -m backend.main
+if __name__ == "__main__":
+    import uvicorn
+    # main.py 안의 app 객체를 8000 포트로 실행
+    uvicorn.run(app, host="0.0.0.0", port=8000)

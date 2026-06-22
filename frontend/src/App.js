@@ -1,10 +1,21 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 // .env의 REACT_APP_API_URL을 읽음. 없으면 로컬 백엔드로 fallback (하드코딩 방지)
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 function App() {
-  const [messages, setMessages] = useState([]);
+  // messages 초기값: localStorage에 저장된 대화가 있으면 복원, 없으면 빈 배열
+  // (새로고침해도 대화가 유지되도록 함)
+  const [messages, setMessages] = useState(() => {
+    const saved = localStorage.getItem("chat_messages");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // messages가 바뀔 때마다 localStorage에 저장 (새로고침 대비)
+  useEffect(() => {
+    localStorage.setItem("chat_messages", JSON.stringify(messages));
+  }, [messages]);
+
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [maxHistory, setMaxHistory] = useState(10);
@@ -27,11 +38,19 @@ function App() {
     setLoading(true);
 
     try {
+      // 이전 대화이력을 백엔드 형식 [{role, content}]으로 변환
+      // 화면 messages에서 role/content만 추출 (bot → assistant로 변환)
+      // 방금 추가한 이번 질문(userMessage)은 history에서 제외 (질문은 query로 따로 감)
+      const history = messages.map((m) => ({
+        role: m.role === "bot" ? "assistant" : "user",
+        content: m.content,
+      }));
+
       const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // 백엔드 인터페이스에 맞춰 query/history 전송
-        body: JSON.stringify({ query: input, history: [] }),
+        // query(이번 질문) + history(이전 대화) + max_history(슬라이더 값) 전송
+        body: JSON.stringify({ query: input, history: history, max_history: maxHistory }),
       });
 
       // 백엔드가 dict(JSON)를 한 번에 반환 → json()으로 파싱
@@ -60,9 +79,10 @@ function App() {
     }
   };
 
-  // New Chat: 화면 초기화 + 새 세션 ID 발급 (이전 대화와 완전히 분리)
+  // New Chat: 화면 초기화 + localStorage 비움 + 새 세션 ID 발급 (이전 대화와 완전히 분리)
   const startNewChat = () => {
     setMessages([]);
+    localStorage.removeItem("chat_messages");   // 저장된 대화도 삭제 (새로고침해도 안 되살아나게)
     sessionId.current = `session_${Date.now()}`;
   };
 
