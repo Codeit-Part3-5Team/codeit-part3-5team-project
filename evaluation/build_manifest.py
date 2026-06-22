@@ -17,19 +17,21 @@ import json
 import hashlib
 import subprocess
 from datetime import datetime, timezone, timedelta
-from collections import Counter, defaultdict
+from collections import Counter
 
 # --- import 환경 독립 처리 (어디서 실행하든 mask_common 찾도록) ---
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mask_common import (
-    scan_restricted, scan_emails_by_class, MASK_TOKEN_RE,
-    is_dummy_number, POLICY_VERSION,
+    scan_restricted,
+    scan_emails_by_class,
+    MASK_TOKEN_RE,
+    POLICY_VERSION,
 )
 
 PARSED = "data/processed/parsed_documents_v2.json"
 MASKED = "data/processed/masked_documents_v3.json"
-FINAL  = "data/processed/chunks_v1_enriched.json"
-OUT    = "evaluation/masking_validation_manifest.json"
+FINAL = "data/processed/chunks_v1_enriched.json"
+OUT = "evaluation/masking_validation_manifest.json"
 
 KST = timezone(timedelta(hours=9))
 
@@ -44,9 +46,13 @@ def sha256_file(path):
 
 def git_commit():
     try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL
-        ).decode().strip()[:10]
+        return (
+            subprocess.check_output(
+                ["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL
+            )
+            .decode()
+            .strip()[:10]
+        )
     except Exception:
         return "unknown"
 
@@ -58,6 +64,7 @@ def get_text(item):
 def scan_all_fields(item):
     """모든 문자열 필드 재귀 스캔 → restricted 발견 건수."""
     cnt = 0
+
     def walk(obj):
         nonlocal cnt
         if isinstance(obj, str):
@@ -69,6 +76,7 @@ def scan_all_fields(item):
         elif isinstance(obj, list):
             for v in obj:
                 walk(v)
+
     walk(item)
     return cnt
 
@@ -85,13 +93,21 @@ def main():
         pe = scan_emails_by_class(parsed[did]["text"])["restricted"]
         mf = scan_restricted(masked[did]["text"])
         me = scan_emails_by_class(masked[did]["text"])["restricted"]
-        for k, v in pf.items(): p_total[k] += len(v)
-        if pe: p_total["private_email"] += len(pe)
-        for k, v in mf.items(): m_total[k] += len(v)
-        if me: m_total["private_email"] += len(me)
+        for k, v in pf.items():
+            p_total[k] += len(v)
+        if pe:
+            p_total["private_email"] += len(pe)
+        for k, v in mf.items():
+            m_total[k] += len(v)
+        if me:
+            m_total["private_email"] += len(me)
     candidates = sum(p_total.values())
     residual_masked = sum(m_total.values())
-    coverage = round((candidates - residual_masked) / candidates * 100, 1) if candidates else 100.0
+    coverage = (
+        round((candidates - residual_masked) / candidates * 100, 1)
+        if candidates
+        else 100.0
+    )
 
     # --- 최종 청크 전 필드 재유입 ---
     final_residual = sum(scan_all_fields(ch) for ch in chunks)
@@ -106,12 +122,17 @@ def main():
 
     # --- 처리 완결성 ---
     doc_ids = [ch["metadata"]["doc_id"] for ch in chunks]
-    chunk_per_doc = Counter(doc_ids)
+    Counter(doc_ids)
     orphan = sum(1 for ch in chunks if not ch["metadata"].get("doc_id"))
 
     # --- release gate ---
-    status = "PASS" if (residual_masked == 0 and final_residual == 0
-                        and email_class["unknown"] == 0) else "FAIL"
+    status = (
+        "PASS"
+        if (
+            residual_masked == 0 and final_residual == 0 and email_class["unknown"] == 0
+        )
+        else "FAIL"
+    )
 
     manifest = {
         "manifest_version": "1.0",
@@ -119,7 +140,6 @@ def main():
         "policy_version": POLICY_VERSION,
         "git_commit": git_commit(),
         "validation_status": status,
-
         "data_completeness": {
             "input_documents": len(parsed),
             "masked_documents": len(masked),
@@ -128,7 +148,6 @@ def main():
             "orphan_chunks": orphan,
             "docs_without_chunks": 100 - len(set(doc_ids)),
         },
-
         "pii_protection": {
             "restricted_candidates_in_source": dict(p_total),
             "restricted_residual_in_masked": residual_masked,
@@ -137,13 +156,11 @@ def main():
             "mask_tokens_preserved": token_count,
             "email_classification": dict(email_class),
         },
-
         "integrity_hashes": {
             "parsed_v2_sha256": sha256_file(PARSED),
             "masked_v3_sha256": sha256_file(MASKED),
             "enriched_sha256": sha256_file(FINAL),
         },
-
         "scope": {
             "verified": [
                 "최종 배포 청크(page_content) 및 metadata 전 문자열 필드",

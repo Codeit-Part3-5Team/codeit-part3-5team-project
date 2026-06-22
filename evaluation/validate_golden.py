@@ -7,7 +7,7 @@
 #         = 청크 제작자(DE)가 평가 데이터 품질을 보증 (GIGO 방지)
 #
 #  ※ 역할 경계:
-#     - 골든셋 작성 = 아인님
+#     - 골든셋 작성 = DE 아인
 #     - 평가 실행(retrieval/answer) = 수민님
 #     - 라벨 정합성 보증(청크 실재·정답 정합) = 도혁(청크 만든 사람)
 #
@@ -16,14 +16,12 @@
 #    [2] 정답 정합  : auto 생성 정답이 청크 메타와 일치하는지 (예산·기관·마감·공고번호)
 #    [3] refusal   : 답변거부 문항의 라벨 빈 값 정상 + PII 거부가 마스킹과 연결되는지
 # =====================================================================
-import os
 import re
-import sys
 import json
 from collections import Counter, defaultdict
 
 GOLDEN = "data/processed/golden_dataset.json"
-FINAL  = "data/processed/chunks_v1_enriched.json"
+FINAL = "data/processed/chunks_v1_enriched.json"
 
 
 def num(s):
@@ -80,16 +78,20 @@ def check_answer_consistency(golden, meta):
         ans = q.get("answer", "")
 
         if st == "fact_budget_amount":
-            ok = (num(ans) == m.get("budget"))
+            ok = num(ans) == m.get("budget")
         elif st == "fact_agency":
             ag = m.get("agency", "") or ""
-            ok = bool(ag) and (ag.replace(" ", "") in ans.replace(" ", "")
-                               or ans.replace(" ", "") in ag.replace(" ", ""))
+            ok = bool(ag) and (
+                ag.replace(" ", "") in ans.replace(" ", "")
+                or ans.replace(" ", "") in ag.replace(" ", "")
+            )
         elif st == "fact_bid_end":
-            ok = (re.sub(r"[^0-9]", "", ans)[:8] ==
-                  re.sub(r"[^0-9]", "", str(m.get("bid_end")))[:8])
+            ok = (
+                re.sub(r"[^0-9]", "", ans)[:8]
+                == re.sub(r"[^0-9]", "", str(m.get("bid_end")))[:8]
+            )
         elif st == "fact_announcement_no":
-            ok = (num(ans) == num(m.get("ann_no")))
+            ok = num(ans) == num(m.get("ann_no"))
         else:
             continue  # 메타 대조 불가 subtype (synthesis/comparison 등)은 스킵
 
@@ -104,8 +106,11 @@ def check_refusal(golden):
     """[3] refusal 문항: 라벨 빈 값 정상 + PII 거부 식별."""
     refusals = [q for q in golden if q["category"] == "refusal"]
     bad_label = [q["id"] for q in refusals if q.get("answer_chunk_labels")]
-    pii_refusals = [(q["id"], q.get("q_subtype")) for q in refusals
-                    if "pii" in q.get("q_subtype", "")]
+    pii_refusals = [
+        (q["id"], q.get("q_subtype"))
+        for q in refusals
+        if "pii" in q.get("q_subtype", "")
+    ]
     return len(refusals), bad_label, pii_refusals
 
 
@@ -121,14 +126,14 @@ def main():
 
     # [1] 라벨 존재
     total, missing = check_label_existence(golden, chunk_keys)
-    print(f"\n[1] 라벨 존재 검증")
+    print("\n[1] 라벨 존재 검증")
     print(f"  총 라벨 {total}개 | 존재하지 않는 라벨: {len(missing)}건")
     if missing:
         for qid, cat, key in missing[:10]:
             print(f"    ✗ {qid} ({cat}): {key}")
 
     # [2] 정답 정합
-    print(f"\n[2] auto 정답 메타 대조")
+    print("\n[2] auto 정답 메타 대조")
     cons = check_answer_consistency(golden, meta)
     cons_fail = 0
     for st, r in sorted(cons.items()):
@@ -139,7 +144,7 @@ def main():
             print(f"      {qid} {did}: 정답='{ans}' vs 메타={m}")
 
     # [3] refusal
-    print(f"\n[3] refusal 설계 검증")
+    print("\n[3] refusal 설계 검증")
     n_ref, bad_label, pii_ref = check_refusal(golden)
     print(f"  refusal {n_ref}건 | 라벨 비어야 정상 → 위반: {len(bad_label)}건")
     print(f"  PII 거부 문항(마스킹 연결): {pii_ref}")
@@ -148,7 +153,9 @@ def main():
     print("\n" + "=" * 60)
     status = "PASS" if (not missing and cons_fail == 0 and not bad_label) else "FAIL"
     print(f"  종합 정합성: {status}")
-    print(f"  - 라벨 누락 {len(missing)} / 정답 불일치 {cons_fail} / refusal 위반 {len(bad_label)}")
+    print(
+        f"  - 라벨 누락 {len(missing)} / 정답 불일치 {cons_fail} / refusal 위반 {len(bad_label)}"
+    )
     print("=" * 60)
 
 

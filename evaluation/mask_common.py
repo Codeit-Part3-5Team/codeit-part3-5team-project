@@ -23,8 +23,15 @@ POLICY_VERSION = "v3"
 
 # 사적 이메일 도메인 (restricted)
 RESTRICTED_EMAIL_DOMAINS = {
-    "gmail.com", "naver.com", "daum.net", "hanmail.net",
-    "nate.com", "kakao.com", "outlook.com", "hotmail.com", "yahoo.com",
+    "gmail.com",
+    "naver.com",
+    "daum.net",
+    "hanmail.net",
+    "nate.com",
+    "kakao.com",
+    "outlook.com",
+    "hotmail.com",
+    "yahoo.com",
 }
 
 # 허용 기관 도메인 (allowed_public) — suffix가 아니라 검토된 도메인 단위 관리
@@ -34,9 +41,9 @@ ALLOWED_PUBLIC_EMAIL_SUFFIXES = (".go.kr", ".re.kr", ".ac.kr", ".or.kr", ".kr")
 # 전수 검토 완료된 공기업/기관 도메인 (.com/.org 라 suffix로 못 잡지만 공식 도메인)
 # ※ 검토 근거: korail.com=한국철도공사, kiria.org=한국로봇산업진흥원, 7luck.com=그랜드코리아레저(공기업)
 APPROVED_PUBLIC_DOMAINS = {
-    "korail.com",   # 한국철도공사
-    "kiria.org",    # 한국로봇산업진흥원
-    "7luck.com",    # 그랜드코리아레저(GKL) 공기업
+    "korail.com",  # 한국철도공사
+    "kiria.org",  # 한국로봇산업진흥원
+    "7luck.com",  # 그랜드코리아레저(GKL) 공기업
 }
 # 단, suffix만으로 자동 허용하지 않고 분류용으로만 사용. 미검토 도메인은 unknown(review)로.
 
@@ -60,25 +67,34 @@ def normalize(text: str) -> str:
 
 # --- PII 탐지 패턴 (검증 전용, 공격적이되 경계·길이로 false positive 차단) ---
 # 핵심: (?<!\d) 앞 숫자 없음 / (?!\d) 뒤 숫자 없음 → 긴 숫자열 일부 오탐 방지
-SEP = r"[\s\-.]{0,2}"   # 숫자 그룹 사이 허용 separator (제한적)
+SEP = r"[\s\-.]{0,2}"  # 숫자 그룹 사이 허용 separator (제한적)
 
 PATTERNS = {
     # restricted (마스킹 대상)
-    "mobile":   re.compile(r"(?<!\d)01[016789]" + SEP + r"\d{3,4}" + SEP + r"\d{4}(?!\d)"),
-    "ssn":      re.compile(r"(?<!\d)\d{6}-[1-4]\d{6}(?!\d)"),           # 주민번호(뒷자리 1~4)
-    "biz_no":   re.compile(r"(?<!\d)\d{3}-\d{2}-\d{5}(?!\d)"),          # 사업자등록번호
-    "corp_no":  re.compile(r"(?<!\d)\d{6}-\d{7}(?!\d)"),               # 법인등록번호
-    "account":  re.compile(r"(?<!\d)\d{2,6}-\d{2,6}-\d{2,6}-?\d{0,6}(?!\d)"),  # 계좌(느슨, 검토 플래그용)
+    "mobile": re.compile(
+        r"(?<!\d)01[016789]" + SEP + r"\d{3,4}" + SEP + r"\d{4}(?!\d)"
+    ),
+    "ssn": re.compile(r"(?<!\d)\d{6}-[1-4]\d{6}(?!\d)"),  # 주민번호(뒷자리 1~4)
+    "biz_no": re.compile(r"(?<!\d)\d{3}-\d{2}-\d{5}(?!\d)"),  # 사업자등록번호
+    "corp_no": re.compile(r"(?<!\d)\d{6}-\d{7}(?!\d)"),  # 법인등록번호
+    "account": re.compile(
+        r"(?<!\d)\d{2,6}-\d{2,6}-\d{2,6}-?\d{0,6}(?!\d)"
+    ),  # 계좌(느슨, 검토 플래그용)
 }
 
 EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
-LANDLINE_RE = re.compile(r"(?<!\d)0\d{1,2}-\d{3,4}-\d{4}(?!\d)")   # 유선전화(allowed)
-MASK_TOKEN_RE = re.compile(r"\[(전화번호|이메일|휴대폰|주민등록번호|계좌번호|법인등록번호|사업자등록번호)\]")
+LANDLINE_RE = re.compile(r"(?<!\d)0\d{1,2}-\d{3,4}-\d{4}(?!\d)")  # 유선전화(allowed)
+MASK_TOKEN_RE = re.compile(
+    r"\[(전화번호|이메일|휴대폰|주민등록번호|계좌번호|법인등록번호|사업자등록번호)\]"
+)
+
 
 # 휴대폰 검증: 패턴 매치 후 숫자만 추출해 정확히 11자리인지 재확인
 def is_real_mobile(s: str) -> bool:
     digits = re.sub(r"\D", "", s)
-    return len(digits) == 11 and digits.startswith(("010", "011", "016", "017", "018", "019"))
+    return len(digits) == 11 and digits.startswith(
+        ("010", "011", "016", "017", "018", "019")
+    )
 
 
 def is_dummy_number(s: str) -> bool:
@@ -99,7 +115,7 @@ def classify_email(email: str) -> str:
     domain = email.split("@")[1].lower()
     if domain in RESTRICTED_EMAIL_DOMAINS:
         return "restricted"
-    if domain in APPROVED_PUBLIC_DOMAINS:      # 전수 검토된 공기업 도메인
+    if domain in APPROVED_PUBLIC_DOMAINS:  # 전수 검토된 공기업 도메인
         return "allowed_public"
     if domain.endswith(ALLOWED_PUBLIC_EMAIL_SUFFIXES):
         return "allowed_public"
@@ -113,8 +129,11 @@ def scan_restricted(text: str):
     found = {}
 
     # 휴대폰 (11자리 재확인 + 빈양식 더미 제외)
-    mob = [m.group() for m in PATTERNS["mobile"].finditer(norm)
-           if is_real_mobile(m.group()) and not is_dummy_number(m.group())]
+    mob = [
+        m.group()
+        for m in PATTERNS["mobile"].finditer(norm)
+        if is_real_mobile(m.group()) and not is_dummy_number(m.group())
+    ]
     if mob:
         found["mobile"] = mob
 
@@ -129,8 +148,11 @@ def scan_restricted(text: str):
         found["biz_no"] = biz
 
     # 법인등록번호 (XXXXXX-XXXXXXX, 주민번호로 잡힌 것·더미 제외)
-    corp = [c for c in PATTERNS["corp_no"].findall(norm)
-            if c not in ssn and not is_dummy_number(c)]
+    corp = [
+        c
+        for c in PATTERNS["corp_no"].findall(norm)
+        if c not in ssn and not is_dummy_number(c)
+    ]
     if corp:
         found["corp_no"] = corp
 

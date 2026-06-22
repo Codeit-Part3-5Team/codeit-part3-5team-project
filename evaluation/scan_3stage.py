@@ -19,13 +19,15 @@ from collections import defaultdict
 # import 환경 독립 처리 (어디서 실행하든 mask_common 찾도록)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mask_common import (
-    scan_restricted, scan_emails_by_class, MASK_TOKEN_RE,
-    LANDLINE_RE, normalize, POLICY_VERSION,
+    scan_restricted,
+    scan_emails_by_class,
+    MASK_TOKEN_RE,
+    POLICY_VERSION,
 )
 
 PARSED = "data/processed/parsed_documents_v2.json"
 MASKED = "data/processed/masked_documents_v3.json"
-FINAL  = "data/processed/chunks_v1_enriched.json"
+FINAL = "data/processed/chunks_v1_enriched.json"
 
 
 def get_text(item):
@@ -62,8 +64,11 @@ def stage1_parsed():
         for k, v in r.items():
             inventory[k] += len(v)
             docs_with_pii.add(d["doc_id"])
-    return {"total_docs": len(docs), "pii_inventory": dict(inventory),
-            "docs_with_pii_candidates": len(docs_with_pii)}
+    return {
+        "total_docs": len(docs),
+        "pii_inventory": dict(inventory),
+        "docs_with_pii_candidates": len(docs_with_pii),
+    }
 
 
 def stage2_masked():
@@ -80,10 +85,12 @@ def stage2_masked():
         ec = scan_emails_by_class(get_text(d))
         for k, v in ec.items():
             email_class[k] += len(v)
-    return {"total_docs": len(docs),
-            "restricted_residual": {k: len(v) for k, v in residual.items()},
-            "residual_detail": {k: v[:5] for k, v in residual.items()},
-            "email_classification": dict(email_class)}
+    return {
+        "total_docs": len(docs),
+        "restricted_residual": {k: len(v) for k, v in residual.items()},
+        "residual_detail": {k: v[:5] for k, v in residual.items()},
+        "email_classification": dict(email_class),
+    }
 
 
 def stage3_final():
@@ -96,9 +103,11 @@ def stage3_final():
         for k, v in f.items():
             residual[k].extend(v)
         token_count += len(MASK_TOKEN_RE.findall(get_text(ch)))
-    return {"total_chunks": len(chunks),
-            "restricted_residual_fields": {k: len(v) for k, v in residual.items()},
-            "mask_tokens_present": token_count}
+    return {
+        "total_chunks": len(chunks),
+        "restricted_residual_fields": {k: len(v) for k, v in residual.items()},
+        "mask_tokens_present": token_count,
+    }
 
 
 def main():
@@ -108,7 +117,9 @@ def main():
 
     print("\n[1단계] parsed_v2 — PII 후보 인벤토리 (발견=정상)")
     s1 = stage1_parsed()
-    print(f"  문서 {s1['total_docs']}건 | PII 후보 보유 문서 {s1['docs_with_pii_candidates']}건")
+    print(
+        f"  문서 {s1['total_docs']}건 | PII 후보 보유 문서 {s1['docs_with_pii_candidates']}건"
+    )
     print(f"  인벤토리: {s1['pii_inventory']}")
 
     print("\n[2단계] masked_v3 — 제한 식별정보 잔존 (0이어야 PASS)")
@@ -121,7 +132,9 @@ def main():
 
     print("\n[3단계] enriched — 청킹·직렬화 후 재유입 (0이어야 PASS)")
     s3 = stage3_final()
-    print(f"  청크 {s3['total_chunks']}건 | 마스킹 토큰 {s3['mask_tokens_present']}개 보존")
+    print(
+        f"  청크 {s3['total_chunks']}건 | 마스킹 토큰 {s3['mask_tokens_present']}개 보존"
+    )
     print(f"  재유입(전 필드): {s3['restricted_residual_fields'] or '없음 (0건)'}")
 
     # 종합 판정
@@ -131,7 +144,9 @@ def main():
     status = "PASS" if (s2_fail == 0 and s3_fail == 0) else "FAIL"
     print(f"  종합 판정: {status}")
     print(f"  - masked 잔존: {s2_fail}건 / final 재유입: {s3_fail}건")
-    print(f"  - unknown 이메일(검토대상): {s2['email_classification'].get('unknown', 0)}건")
+    print(
+        f"  - unknown 이메일(검토대상): {s2['email_classification'].get('unknown', 0)}건"
+    )
     print("=" * 60)
 
     return {"stage1": s1, "stage2": s2, "stage3": s3, "status": status}
