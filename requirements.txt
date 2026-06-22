@@ -1,4 +1,5 @@
-# 공통 (데이터팀 제공)
+# 5팀 입찰메이트 RFP RAG / 데이터 처리(DE) 공통 의존성
+# Python 3.12 기준 / 검증 완료
 pdfplumber==0.11.9
 PyMuPDF==1.27.2.3
 pyhwp==0.1b15
@@ -9,7 +10,6 @@ numpy==2.4.4
 rapidfuzz
 jupyter
 ipykernel
-
 # Retrieval / Generation 팀
 langchain
 langchain-openai
