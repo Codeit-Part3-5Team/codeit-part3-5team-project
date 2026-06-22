@@ -17,8 +17,14 @@ loader.py
         budget_amount : int | None  (meta_summary 청크만 존재)
 """
 
+import os
 import json
 from langchain_core.documents import Document
+from dotenv import load_dotenv
+
+load_dotenv()
+# 데이터 경로는 .env(CHUNKS_PATH)로 주입 - 하드코딩 지양
+CHUNKS_PATH = os.getenv("CHUNKS_PATH", "data/processed/chunks_v1_enriched.json")
 
 
 def load_chunks(json_path: str) -> list[Document]:
