@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useChat } from "./useChat";
+import { theme } from "./theme";
 
 function App() {
   // 채팅 기능은 useChat 훅에서 가져옴 (상태·API호출·localStorage 등)
@@ -18,17 +19,20 @@ function App() {
   // 사이드바 열림/닫힘은 순수 화면 상태라 App에 둠
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  // 색·폰트는 theme에서 가져옴 (바꾸려면 theme.js만 수정)
+  const c = theme.colors;
+
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#f0f2f5", fontFamily: "sans-serif" }}>
+    <div style={{ display: "flex", height: "100vh", background: c.bg, fontFamily: theme.font.family }}>
 
       {/* 사이드바 */}
       {sidebarOpen && (
-        <div style={{ width: "260px", background: "#0d1117", display: "flex", flexDirection: "column", padding: "16px", gap: "8px" }}>
+        <div style={{ width: "260px", background: c.sidebar, display: "flex", flexDirection: "column", padding: "16px", gap: "8px" }}>
 
           {/* 사이드바 토글 버튼 */}
           <button
             onClick={() => setSidebarOpen(false)}
-            style={{ alignSelf: "flex-end", background: "transparent", border: "1px solid #333", color: "#fff", borderRadius: "6px", padding: "6px 10px", cursor: "pointer", marginBottom: "8px" }}
+            style={{ alignSelf: "flex-end", background: "transparent", border: `1px solid ${c.border}`, color: "#fff", borderRadius: "6px", padding: "6px 10px", cursor: "pointer", marginBottom: "8px" }}
           >
             ☰
           </button>
@@ -36,13 +40,13 @@ function App() {
           {/* New Chat 버튼 */}
           <button
             onClick={startNewChat}
-            style={{ background: "#1a1f2e", border: "1px solid #333", color: "#fff", borderRadius: "8px", padding: "10px 14px", cursor: "pointer", textAlign: "left" }}
+            style={{ background: c.sidebarItem, border: `1px solid ${c.border}`, color: "#fff", borderRadius: "8px", padding: "10px 14px", cursor: "pointer", textAlign: "left" }}
           >
             + New Chat
           </button>
 
           <div style={{ marginTop: "8px" }}>
-            <div style={{ color: "#aaa", fontSize: "12px", marginBottom: "4px" }}>대화 이력 제한</div>
+            <div style={{ color: c.textSub, fontSize: "12px", marginBottom: "4px" }}>대화 이력 제한</div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <input
                 type="range"
@@ -57,12 +61,12 @@ function App() {
           </div>
 
           {/* 하단 사용자 정보 */}
-          <div style={{ marginTop: "auto", background: "#1a1f2e", border: "1px solid #333", borderRadius: "8px", padding: "10px 14px", display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ marginTop: "auto", background: c.sidebarItem, border: `1px solid ${c.border}`, borderRadius: "8px", padding: "10px 14px", display: "flex", alignItems: "center", gap: "10px" }}>
             <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#555", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>
               👤
             </div>
             <div>
-              <div style={{ color: "#aaa", fontSize: "12px" }}>Welcome back,</div>
+              <div style={{ color: c.textSub, fontSize: "12px" }}>Welcome back,</div>
               <div style={{ color: "#fff", fontSize: "14px", fontWeight: "bold" }}>User</div>
             </div>
           </div>
@@ -73,7 +77,7 @@ function App() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
 
         {/* 상단 헤더 */}
-        <div style={{ display: "flex", alignItems: "center", padding: "12px 20px", background: "#fff", borderBottom: "1px solid #e0e0e0" }}>
+        <div style={{ display: "flex", alignItems: "center", padding: "12px 20px", background: c.surface, borderBottom: `1px solid ${c.borderLight}` }}>
           {/* 사이드바 닫혀있을 때 토글 버튼 */}
           {!sidebarOpen && (
             <button
@@ -94,7 +98,7 @@ function App() {
             >
               {/* 봇 아바타 */}
               {msg.role === "bot" && (
-                <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#e8f5e9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px" }}>
+                <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: c.botAvatar, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px" }}>
                   🤖
                 </div>
               )}
@@ -105,12 +109,12 @@ function App() {
                   maxWidth: "60%",
                   padding: "12px 16px",
                   borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                  background: "#fff",
-                  border: msg.role === "user" ? "1px solid #ddd" : "none",
-                  borderLeft: msg.role === "bot" ? "3px solid #4CAF50" : "none",
+                  background: c.surface,
+                  border: msg.role === "user" ? `1px solid #ddd` : "none",
+                  borderLeft: msg.role === "bot" ? `3px solid ${c.primary}` : "none",
                   fontSize: "14px",
                   lineHeight: "1.5",
-                  color: "#333",
+                  color: c.textMain,
                   boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                 }}
               >
@@ -118,7 +122,7 @@ function App() {
 
                 {/* 응답 시간 표시 (elapsed_sec). 0초도 표시되도록 != null 사용 */}
                 {msg.elapsed != null && (
-                  <div style={{ fontSize: "11px", color: "#aaa", marginTop: "6px" }}>
+                  <div style={{ fontSize: "11px", color: c.textSub, marginTop: "6px" }}>
                     🕒 {msg.elapsed}초
                   </div>
                 )}
@@ -129,14 +133,14 @@ function App() {
                     {/* 클릭하면 펼침/접힘 토글 (이미 열린 거 누르면 닫힘) */}
                     <div
                       onClick={() => setOpenSources(openSources === idx ? null : idx)}
-                      style={{ fontSize: "12px", color: "#4CAF50", cursor: "pointer", userSelect: "none" }}
+                      style={{ fontSize: "12px", color: c.primary, cursor: "pointer", userSelect: "none" }}
                     >
                       📎 출처 {msg.sources.length}개 {openSources === idx ? "▲" : "▼"}
                     </div>
 
                     {/* 펼쳐졌을 때만 출처 목록 + 청크 표시 */}
                     {openSources === idx && (
-                      <div style={{ marginTop: "6px", padding: "8px", background: "#f6f8fa", borderRadius: "8px", fontSize: "12px", color: "#555" }}>
+                      <div style={{ marginTop: "6px", padding: "8px", background: c.surfaceAlt, borderRadius: "8px", fontSize: "12px", color: c.textSource }}>
                         {/* 출처 목록: 문서ID / 페이지 / 점수 */}
                         {msg.sources.map((src, i) => (
                           <div key={i} style={{ marginBottom: "4px" }}>
@@ -146,7 +150,7 @@ function App() {
 
                         {/* 검색된 청크 본문 */}
                         {msg.chunks && msg.chunks.length > 0 && (
-                          <div style={{ marginTop: "8px", borderTop: "1px solid #e0e0e0", paddingTop: "8px" }}>
+                          <div style={{ marginTop: "8px", borderTop: `1px solid ${c.borderLight}`, paddingTop: "8px" }}>
                             <div style={{ fontWeight: "bold", marginBottom: "4px" }}>검색된 내용</div>
                             {msg.chunks.map((chunk, i) => (
                               <div key={i} style={{ marginBottom: "4px", lineHeight: "1.4" }}>{chunk}</div>
@@ -161,7 +165,7 @@ function App() {
 
               {/* 유저 아바타 */}
               {msg.role === "user" && (
-                <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#ff8a65", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px" }}>
+                <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: c.userAvatar, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px" }}>
                   👤
                 </div>
               )}
@@ -171,17 +175,17 @@ function App() {
           {/* 응답 대기 중 표시 */}
           {loading && (
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#e8f5e9", display: "flex", alignItems: "center", justifyContent: "center" }}>🤖</div>
-              <div style={{ padding: "12px 16px", background: "#fff", borderRadius: "16px", fontSize: "14px", color: "#aaa" }}>입력 중...</div>
+              <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: c.botAvatar, display: "flex", alignItems: "center", justifyContent: "center" }}>🤖</div>
+              <div style={{ padding: "12px 16px", background: c.surface, borderRadius: "16px", fontSize: "14px", color: c.textSub }}>입력 중...</div>
             </div>
           )}
         </div>
 
         {/* 입력창 영역 */}
-        <div style={{ padding: "16px 40px", background: "#fff", borderTop: "1px solid #e0e0e0" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", background: "#f9f9f9", border: "1px solid #e0e0e0", borderRadius: "12px", padding: "8px 16px" }}>
+        <div style={{ padding: "16px 40px", background: c.surface, borderTop: `1px solid ${c.borderLight}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", background: c.inputBg, border: `1px solid ${c.borderLight}`, borderRadius: "12px", padding: "8px 16px" }}>
             <input
-              style={{ flex: 1, border: "none", background: "transparent", outline: "none", fontSize: "14px", color: "#333" }}
+              style={{ flex: 1, border: "none", background: "transparent", outline: "none", fontSize: "14px", color: c.textMain }}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -191,7 +195,7 @@ function App() {
             <button
               onClick={sendMessage}
               disabled={loading}
-              style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "18px", color: loading ? "#ccc" : "#333" }}
+              style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "18px", color: loading ? "#ccc" : c.textMain }}
             >
               ▷
             </button>
