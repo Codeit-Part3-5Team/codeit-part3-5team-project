@@ -9,6 +9,8 @@ import os
 from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings
 
+from config import EMBEDDING_MODEL
+
 load_dotenv()
 
 def get_embeddings() -> OpenAIEmbeddings:
@@ -19,7 +21,7 @@ def get_embeddings() -> OpenAIEmbeddings:
             OpenAIEmbeddings: text-embedding-3-small 모델
     """
     return OpenAIEmbeddings(
-        model = "text-embedding-3-small",
+        model = EMBEDDING_MODEL,
         openai_api_key = os.getenv("OPENAI_API_KEY")
     )
 
@@ -42,6 +44,6 @@ def get_cached_embeddings() -> OpenAIEmbeddings:
 if __name__ == "__main__":
     embeddings = get_cached_embeddings()
     test = embeddings.embed_query("국민연금공단 예산이 얼마야?")
-    print("임베딩 모델: text-embedding-3-small")
+    print(f"임베딩 모델: {EMBEDDING_MODEL}")
     print(f"벡터 차원: {len(test)}")
     print("embedder.py 정상 동작!")

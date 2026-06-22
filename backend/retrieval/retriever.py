@@ -28,18 +28,15 @@ from rapidfuzz import fuzz, process
 
 from embedder import get_cached_embeddings
 
-# 경로 설정
-# 데이터/인덱스 경로는 .env(CHUNKS_PATH, FAISS_INDEX_PATH)로 주입 — 하드코딩 지양.
-FAISS_INDEX_PATH = os.getenv("FAISS_INDEX_PATH", "data/faiss_index")
-CHUNKS_PATH      = os.getenv("CHUNKS_PATH", "data/processed/chunks_v1_enriched.json")
-
-# MMR 파라미터
-MMR_K           = int(os.getenv("MMR_K", 5))          # 최종 반환 문서 수
-MMR_FETCH_K     = int(os.getenv("MMR_FETCH_K", 20))   # MMR 후보 풀 크기
-MMR_LAMBDA      = float(os.getenv("MMR_LAMBDA", 0.5)) # 관련성 vs 다양성 (1=관련성만)
-
-# 메타데이터 필터 임계값
-FUZZY_THRESHOLD = int(os.getenv("FUZZY_THRESHOLD", 80))
+# 모든 설정값은 config.yaml(팀 공용) + .env(개인)에서 옴 -> config.py가 통합 제공
+from config import (
+    FAISS_INDEX_PATH,
+    CHUNKS_PATH,
+    MMR_K,
+    MMR_FETCH_K,
+    MMR_LAMBDA,
+    FUZZY_THRESHOLD
+)
 
 # agency 보조 별칭 사전
 # 데이터의 agency_aliases로 못 잡는 약칭만 보조로 관리 (약칭 → 정규화 기관명)
