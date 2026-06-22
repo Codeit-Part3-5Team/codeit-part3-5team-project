@@ -1,0 +1,54 @@
+{
+  "manifest_version": "1.0",
+  "generated_at": "2026-06-22T11:39:31.988386+09:00",
+  "policy_version": "v3",
+  "git_commit": "b3e8db51bb",
+  "validation_status": "PASS",
+  "data_completeness": {
+    "input_documents": 100,
+    "masked_documents": 100,
+    "total_chunks": 11310,
+    "unique_doc_ids": 100,
+    "orphan_chunks": 0,
+    "docs_without_chunks": 0
+  },
+  "pii_protection": {
+    "restricted_candidates_in_source": {
+      "biz_no": 4,
+      "private_email": 2,
+      "corp_no": 2
+    },
+    "restricted_residual_in_masked": 0,
+    "restricted_residual_in_final": 0,
+    "masking_coverage_percent": 100.0,
+    "mask_tokens_preserved": 7,
+    "email_classification": {
+      "restricted": 0,
+      "allowed_public": 66,
+      "unknown": 0
+    }
+  },
+  "integrity_hashes": {
+    "parsed_v2_sha256": "dcad25279d8e8a3da378180fe73d85f9ad8b222833891d1820f0d3956fa772ed",
+    "masked_v3_sha256": "3dba55350a9edb58de298283e20f77b7e9eeb33a90d391d224105d31c4c37bdf",
+    "enriched_sha256": "9f84433208697282a7b6c5da308c5218d49d65d93998e173b16cf9b08e2fad76"
+  },
+  "scope": {
+    "verified": [
+      "최종 배포 청크(page_content) 및 metadata 전 문자열 필드",
+      "parsed→masked→final 3단계 제한 식별정보 추적",
+      "정규화(NFKC/전각/특수대시/제로폭/제어문자) 후 변종 탐지"
+    ],
+    "limitations": [
+      "정규식 기반 탐지로, 자연어로 풀어쓴 PII(예: '공일공에 일이삼사')는 탐지 범위 밖",
+      "이미지/스캔본 내 텍스트(OCR 미적용 객체)는 RAG 인덱싱 범위 밖이며 미검증",
+      "HWP 파서는 BodyText만 추출 — 문서속성/메모/변경이력 스트림은 미추출·미검증",
+      "검증 대상은 정적 데이터(청크). 모델 답변의 환각·프롬프트 인젝션은 R/G·서비스팀 책임 영역",
+      "파서/마스커/청커 버전 변경 시 본 검증 결과는 무효이며 전체 재검증 필요"
+    ],
+    "handover_contract": [
+      "R/G팀은 enriched_sha256과 일치하는 chunks_v1_enriched.json만 임베딩/인덱싱 입력으로 사용",
+      "raw parsed/unmasked 산출물은 retrieval/generation 파이프라인에 연결 금지"
+    ]
+  }
+}
