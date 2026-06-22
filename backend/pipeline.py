@@ -36,8 +36,9 @@ def retrieve(query: str, config: dict) -> list[Document]:
         return mock_retrieve(query, top_k)
 
 
-# max_history 인자 추가 (프론트 슬라이더 값을 직접 받음. 없으면 config→기본 10)
-def get_ai_response(query: str, history: list[dict] = None, config: dict = None, max_history: int = None) -> dict:
+# use_ollama: True면 시나리오 A(Ollama), False면 B(gpt). 평가에서 모델 비교용
+def get_ai_response(query: str, history: list[dict] = None, config: dict = None,
+                    max_history: int = None, use_ollama: bool = False) -> dict:
     start = time.time()
     history = history or []
     config = config or load_config()   # config 없으면 config.yaml에서 로드
@@ -52,8 +53,10 @@ def get_ai_response(query: str, history: list[dict] = None, config: dict = None,
     #    config로 naive/agentic 분기는 추후 추가 예정 (지금은 자리만)
     docs = retrieve(query, config)     # retriever_type에 따라 분기
 
-    # 3) 답변 생성 (gpt-5-mini) — 잘라낸 이전 대화이력을 함께 넘김
-    answer, tokens_used = generate_answer(query, docs, trimmed_history)
+    # 3) 답변 생성 — use_ollama로 시나리오 A/B 선택, Ollama 모델은 config에서 읽음
+    ollama_model = config.get("ollama_model", "llama3.2")
+    answer, tokens_used = generate_answer(query, docs, trimmed_history,
+                                          use_ollama=use_ollama, ollama_model=ollama_model)
 
     # 4) 약속한 dict 형식(5개 키)으로 조립
     sources = [
@@ -77,12 +80,20 @@ def get_ai_response(query: str, history: list[dict] = None, config: dict = None,
 
 
 # 직접 실행 시 전체 파이프라인 테스트
-# 실행: (backend 폴더에서) python -m pipeline
+# 실행: (루트에서) python -m backend.pipeline
 if __name__ == "__main__":
+    # 시나리오 B (gpt) 테스트
     result = get_ai_response("이 사업 예산이랑 기간 알려줘", history=[], config={"top_k": 5})
-    print("=== get_ai_response 결과 ===")
+    print("=== get_ai_response 결과 (gpt) ===")
     print("answer:", result["answer"])
     print("sources:", result["sources"])
     print("chunks 수:", len(result["retrieved_chunks"]))
     print("elapsed_sec:", result["elapsed_sec"])
     print("tokens_used:", result["tokens_used"])
+
+    # 시나리오 A (Ollama) 테스트 — use_ollama=True, 모델은 config의 ollama_model
+    result_ollama = get_ai_response("이 사업 예산이랑 기간 알려줘", history=[], use_ollama=True)
+    print("\n=== get_ai_response 결과 (Ollama) ===")
+    print("answer:", result_ollama["answer"])
+    print("elapsed_sec:", result_ollama["elapsed_sec"])
+    print("tokens_used:", result_ollama["tokens_used"])

@@ -1,5 +1,5 @@
-# call_gpt: 단계 2-1에서 만든 gpt-5-mini 호출 함수
-from backend.generation.llm_client import call_gpt
+# call_gpt: gpt-5-mini 호출 / call_ollama: Ollama(시나리오 A) 호출
+from backend.generation.llm_client import call_gpt, call_ollama
 # Document: LangChain 표준 문서 객체 (재헌님이 검색 결과를 이 형식으로 넘겨줌)
 from langchain_core.documents import Document
 import os
@@ -29,10 +29,10 @@ def build_context(docs: list[Document]) -> str:
     return "\n\n---\n\n".join(blocks)
 
 
-# 질문 + 검색결과 + 대화이력 → gpt-5-mini 답변 생성
-# history: 이전 대화 [{"role": "user"/"assistant", "content": "..."}, ...] (이미 trim된 상태로 들어옴)
-# 반환: (답변 텍스트, 사용된 토큰 수)
-def generate_answer(question: str, docs: list[Document], history: list[dict] = None) -> tuple[str, int]:
+# use_ollama: True면 Ollama(시나리오 A), False면 gpt-5-mini(시나리오 B)
+# ollama_model: Ollama 사용 시 모델명 (평가에서 후보 바꿔가며 지정)
+def generate_answer(question: str, docs: list[Document], history: list[dict] = None,
+                    use_ollama: bool = False, ollama_model: str = "llama3.2") -> tuple[str, int]:
     system_prompt = load_system_prompt()       # 역할+규칙
     context = build_context(docs)               # 검색결과 → context
     history = history or []                      # history 없으면 빈 리스트로
@@ -45,17 +45,21 @@ def generate_answer(question: str, docs: list[Document], history: list[dict] = N
     )
 
     # messages 구성: system → 이전 대화이력 → 이번 질문 순서로 쌓음
-    # 이전 대화를 system과 이번 질문 사이에 넣어야 gpt가 맥락을 이어받음
+    # 이전 대화를 system과 이번 질문 사이에 넣어야 모델이 맥락을 이어받음
     messages = [{"role": "system", "content": system_prompt}]
     messages.extend(history)                     # trim된 이전 대화 끼워넣기
     messages.append({"role": "user", "content": user_content})
 
-    answer, tokens_used = call_gpt(messages)
+    # 모델 선택: 시나리오 A(Ollama) vs B(gpt) — 입출력 형식이 같아 함수만 분기
+    if use_ollama:
+        answer, tokens_used = call_ollama(messages, model=ollama_model)
+    else:
+        answer, tokens_used = call_gpt(messages)
     return answer, tokens_used
 
 
 # 직접 실행 시 mock Document로 테스트
-# 실행: (backend 폴더에서) python -m generation.generator
+# 실행: (루트에서) python -m backend.generation.generator
 if __name__ == "__main__":
     # 재헌님 예상 형식(Document + doc_id/page/score)으로 mock 검색결과 생성
     mock_docs = [
