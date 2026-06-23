@@ -36,3 +36,10 @@ FUZZY_THRESHOLD = int(_cfg["retriever"]["fuzzy_threshold"])
 
 # ── 임베딩 ────────────────────────────────────────────────────────────────────
 EMBEDDING_MODEL = _cfg["embedding"]["model"]
+
+# ── 마스킹 ────────────────────────────────────────────────────────────────────
+MASKING_BUSINESS_NUMBER  = bool(_cfg["masking"]["business_number"])
+MASKING_CORPORATE_NUMBER = bool(_cfg["masking"]["corporate_number"])
+MASKING_PHONE            = bool(_cfg["masking"]["phone"])
+MASKING_EMAIL            = bool(_cfg["masking"]["email"])
+MASKING_PERSON_NAME      = bool(_cfg["masking"]["person_name"])

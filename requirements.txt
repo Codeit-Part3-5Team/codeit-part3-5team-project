@@ -18,6 +18,16 @@ langchain
 langchain-openai
 langchain-community
 langchain-core
+langgraph
+faiss-cpu
+chromadb
+ragas
+scikit-learn
+rouge-score
+bert-score
+python-dotenv
+tiktoken
+pyyaml
 langchain-ollama
 langgraph
 openai
