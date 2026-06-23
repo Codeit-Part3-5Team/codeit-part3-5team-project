@@ -144,7 +144,7 @@ function App() {
                         {/* 출처 목록: 문서ID / 페이지 / 점수 */}
                         {msg.sources.map((src, i) => (
                           <div key={i} style={{ marginBottom: "4px" }}>
-                            • {src.doc_id} (p.{src.page}, score {src.score})
+                            • {src.file_name} ({src.section}) · score {src.score}
                           </div>
                         ))}
 

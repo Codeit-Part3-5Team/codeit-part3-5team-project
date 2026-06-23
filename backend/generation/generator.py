@@ -17,13 +17,14 @@ def load_system_prompt(filename: str = "system_v1.txt") -> str:
 
 
 # 검색된 Document 리스트 → LLM에 넘길 context 텍스트로 변환
-# 각 청크 앞에 출처 정보(doc_id, page)를 붙여서 LLM이 출처를 인지하도록 함
+# 각 청크 앞에 출처 정보(file_name, section)를 붙여서 LLM이 출처를 인지하도록 함
+# (page는 hwp 특성상 null이라 출처에 쓰지 않음)
 def build_context(docs: list[Document]) -> str:
     blocks = []
     for doc in docs:
-        doc_id = doc.metadata.get("doc_id", "알수없음")
-        page = doc.metadata.get("page", "?")
-        source_info = f"[문서ID: {doc_id} | p.{page}]"
+        file_name = doc.metadata.get("file_name", "알수없음")
+        section = doc.metadata.get("section", "")
+        source_info = f"[출처: {file_name} | {section}]"
         blocks.append(f"{source_info}\n{doc.page_content}")
     # 청크끼리 구분선으로 분리
     return "\n\n---\n\n".join(blocks)

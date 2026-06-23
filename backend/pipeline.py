@@ -7,17 +7,34 @@ import time
 
 
 # 임시 검색 함수 (mock)
-# retrieval이 아직 없어서, Document 리스트를 가짜로 반환한다.
-# 이후 이 함수를 retriever 호출로 교체하면 됨 (이 함수만 갈아끼우면 끝).
+# retrieval이 아직 없어서, 실제 검색결과(get_retriever)와 같은 v2 청크 구조를
+# 흉내낸 Document 리스트를 가짜로 반환한다. metadata 형식이 실제와 같으므로,
+# 이후 이 함수 호출만 실제 retriever로 교체하면 출처/형식이 그대로 맞물린다.
 def mock_retrieve(query: str, top_k: int = 5) -> list[Document]:
     return [
         Document(
-            page_content="본 사업은 국민연금공단의 이러닝시스템 고도화 사업이며, 총 사업예산은 540,000,000원이다.",
-            metadata={"doc_id": "DOC_001", "page": 1, "score": 0.92},
+            page_content="[사업개요] 사업명: 국민연금공단 이러닝시스템 고도화\n사업금액(예산): 540,000,000원\n사업기간: 계약 체결일로부터 6개월",
+            metadata={
+                "doc_id": "DOC_001",
+                "file_name": "국민연금공단_이러닝시스템 고도화.hwp",   # 출처 표기에 사용
+                "section": "메타요약",                                  # 출처 표기에 사용
+                "content_type": "meta_summary",
+                "page": None,                  # hwp라 페이지 개념 없음 → 출처에 미사용
+                "budget_amount": 540000000,
+                "agency_normalized": "국민연금공단",
+                "score": 0.92,                 # retriever가 부착하는 유사도(0~1)
+            },
         ),
         Document(
             page_content="사업 수행 기간은 계약 체결일로부터 6개월로 한다.",
-            metadata={"doc_id": "DOC_001", "page": 3, "score": 0.85},
+            metadata={
+                "doc_id": "DOC_001",
+                "file_name": "국민연금공단_이러닝시스템 고도화.hwp",
+                "section": "Ⅱ. 사업개요 — 사업기간",
+                "content_type": "text",
+                "page": None,
+                "score": 0.85,
+            },
         ),
     ]
 
@@ -58,11 +75,13 @@ def get_ai_response(query: str, history: list[dict] = None, config: dict = None,
     answer, tokens_used = generate_answer(query, docs, trimmed_history,
                                           use_ollama=use_ollama, ollama_model=ollama_model)
 
-    # 4) 약속한 dict 형식(5개 키)으로 조립
+    # 출처는 file_name + section으로 표기 (page는 hwp라 null이므로 미사용)
+    # doc_id는 화면 표기엔 안 쓰지만 추적/디버깅용으로 함께 보관
     sources = [
         {
             "doc_id": d.metadata.get("doc_id"),
-            "page": d.metadata.get("page"),
+            "file_name": d.metadata.get("file_name"),
+            "section": d.metadata.get("section"),
             "score": d.metadata.get("score"),
         }
         for d in docs
