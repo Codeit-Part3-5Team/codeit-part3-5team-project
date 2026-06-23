@@ -1,17 +1,14 @@
-﻿# Python
+# Python
 __pycache__/
 *.py[cod]
-
 # 가상환경
 venv/
 .venv/
-
 # 환경변수/시크릿 (커밋 금지)
 .env
 .env.*
 *.key
 *-key.json
-
 # NDA: 원본 RFP 데이터 (커밋 금지)
 data/raw/
 data/원본데이터/
@@ -19,19 +16,15 @@ data/원본데이터/
 *.pdf
 data_list.csv
 data_list*.xlsx
-
 # 노트북 체크포인트
 .ipynb_checkpoints/
-
 # OS/에디터
 .DS_Store
 Thumbs.db
 .vscode/
-
 # 벡터 인덱스
 *.faiss
 *.index
 vector_store/
-
 # NDA: 데이터 폴더 전체 (원본+가공본 모두 PII 포함)
 data/
