@@ -1,3 +1,41 @@
+# 환경변수 (API 키 등 절대 올리면 안 됨)
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+node_modules/
+**/.env
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 벡터DB (용량 크고 재생성 가능)
+*.faiss
+*.index
+data/vector_db/
+
+# 원본 RFP 데이터 (NDA)
+data/files/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# 로그
+*.log
 # Python
 __pycache__/
 *.py[cod]
