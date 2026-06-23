@@ -2,9 +2,6 @@
 retriever_type: "naive_rag"  # naive_rag / agentic_rag
 top_k: 5
 
-# 임베딩
-embedding_model: "text-embedding-3-small"
-
 # 생성 모델
 llm_model: "gpt-5-mini"
 temperature: 0.2

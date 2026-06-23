@@ -2,9 +2,10 @@
 import os
 import yaml
 
-# config.yaml 경로 (utils의 한 단계 위 = 루트에 위치)
-# utils/config.py → 루트, 두 단계 위
-CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.yaml")
+# config.yaml 경로 (backend/generation/ 아래에 위치 — 생성팀 소유 설정)
+# utils/config.py 기준: 루트로 한 단계 올라가 backend/generation/config.yaml
+_ROOT = os.path.dirname(os.path.dirname(__file__))   # utils의 상위 = 루트
+CONFIG_PATH = os.path.join(_ROOT, "backend", "generation", "config.yaml")
 
 
 # config.yaml 로드
