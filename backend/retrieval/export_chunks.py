@@ -23,12 +23,12 @@ from retriever import load_vectorstore, get_retriever
 # agency / project_name은 필터 안 쓸 거면 None
 QUERIES: list[tuple[str, str | None, str | None]] = [
     ("한영대 특성화 사업 예산 얼마야?", "한영대", None),
-    ("입찰 마감일이 언제야?",            "한영대", None),
-    ("제안요청 주요 내용 알려줘",         "한영대", None),
+    ("한영대 입찰 마감일이 언제야?",            "한영대", None),
+    ("한영대 제안요청 주요 내용 알려줘",         "한영대", None),
     # 필요한 만큼 추가
 ]
 
-OUTPUT_PATH = "sample_chunks.json"
+OUTPUT_PATH = "sample_chunks_v2.json"
 
 
 def chunk_to_dict(c) -> dict:
