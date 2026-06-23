@@ -1,13 +1,41 @@
+# 5팀 입찰메이트 RFP RAG / 데이터 처리(DE) 공통 의존성
+# Python 3.12 기준 / 검증 완료
+
+# --- 데이터 처리 (DE팀) ---
+pdfplumber==0.11.9
+PyMuPDF==1.27.2.3
+pyhwp==0.1b15
+olefile==0.47
+langchain-text-splitters==1.1.2
+pandas==3.0.2
+numpy==2.4.4
+rapidfuzz
+jupyter
+ipykernel
+
+# --- Retrieval / Generation (R/G팀) ---
 langchain
 langchain-openai
 langchain-community
+langchain-core
 langchain-ollama
 langgraph
 openai
 faiss-cpu
+chromadb
+
+# --- 평가 (Evaluation) ---
 ragas
+rouge-score
+bert-score
 scikit-learn
+
+# --- 서비스 (Service) ---
 fastapi
 uvicorn
 python-dotenv
 pydantic
+
+# --- 공통 유틸 ---
+tiktoken
+pyyaml
