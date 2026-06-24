@@ -9,7 +9,7 @@ PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "prompts")
 
 
 # 시스템 프롬프트(역할+규칙) 파일을 읽어옴
-def load_system_prompt(filename: str = "system_v1.txt") -> str:
+def load_system_prompt(filename: str = "system_v2.txt") -> str:
     path = os.path.join(PROMPTS_DIR, filename)
     # UTF-8 명시 (한글 깨짐/cp949 에러 방지)
     with open(path, encoding="utf-8") as f:
@@ -33,8 +33,10 @@ def build_context(docs: list[Document]) -> str:
 # use_ollama: True면 Ollama(시나리오 A), False면 gpt-5-mini(시나리오 B)
 # ollama_model: Ollama 사용 시 모델명 (평가에서 후보 바꿔가며 지정)
 def generate_answer(question: str, docs: list[Document], history: list[dict] = None,
-                    use_ollama: bool = False, ollama_model: str = "llama3.2") -> tuple[str, int]:
-    system_prompt = load_system_prompt()       # 역할+규칙
+                    use_ollama: bool = False, ollama_model: str = "llama3.2",
+                    prompt_version: str = "system_v2") -> tuple[str, int]:
+    # prompt_version으로 시스템 프롬프트 파일 선택 (config에서 주입, 평가 시 v1/v2 전환)
+    system_prompt = load_system_prompt(f"{prompt_version}.txt")
     context = build_context(docs)               # 검색결과 → context
     history = history or []                      # history 없으면 빈 리스트로
 
