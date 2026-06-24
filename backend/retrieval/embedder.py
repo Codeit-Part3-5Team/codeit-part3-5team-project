@@ -22,7 +22,8 @@ def get_embeddings() -> OpenAIEmbeddings:
     """
     return OpenAIEmbeddings(
         model = EMBEDDING_MODEL,
-        openai_api_key = os.getenv("OPENAI_API_KEY")
+        openai_api_key = os.getenv("OPENAI_API_KEY"),
+        chunk_size=200,
     )
 
 # 모듈 라벨 캐싱 (같은 세션 내 재사용)

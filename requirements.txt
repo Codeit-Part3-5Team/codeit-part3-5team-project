@@ -21,18 +21,9 @@ langchain-core
 langgraph
 faiss-cpu
 chromadb
-ragas
-scikit-learn
-rouge-score
-bert-score
-python-dotenv
-tiktoken
-pyyaml
-langchain-ollama
-langgraph
 openai
-faiss-cpu
-chromadb
+langchain-ollama
+pydantic
 
 # --- 평가 (Evaluation) ---
 ragas
@@ -43,9 +34,8 @@ scikit-learn
 # --- 서비스 (Service) ---
 fastapi
 uvicorn
-python-dotenv
-pydantic
 
 # --- 공통 유틸 ---
+python-dotenv
 tiktoken
 pyyaml
