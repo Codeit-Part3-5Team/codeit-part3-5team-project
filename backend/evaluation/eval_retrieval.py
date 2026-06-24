@@ -52,8 +52,10 @@ def load_eval_samples_from_golden(json_path: str) -> list[EvalSample]:
 
     vs = load_vectorstore()
     samples = []
+    refusal_count = 0
     for item in golden:
         if item.get("category") == "refusal":
+            refusal_count += 1
             continue
         results = get_retriever(item["question"], vs)
         samples.append(EvalSample(
@@ -68,6 +70,8 @@ def load_eval_samples_from_golden(json_path: str) -> list[EvalSample]:
             ),
             retrieved_doc_ids=[doc.metadata["doc_id"] for doc in results],
         ))
+    total = len(golden)
+    print(f"[Refusal Filter] 전체 {total}건 중 {refusal_count}건 제외 -> {total - refusal_count}건 평가")
     return samples
 
 
