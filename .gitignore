@@ -26,7 +26,9 @@ Thumbs.db
 # 벡터DB (용량 크고 재생성 가능)
 *.faiss
 *.index
+*.pkl
 data/vector_db/
+data/faiss_index/
 
 # 원본 RFP 데이터 (NDA)
 data/files/
