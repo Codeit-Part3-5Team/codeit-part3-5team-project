@@ -23,7 +23,7 @@ faiss-cpu
 chromadb
 openai
 langchain-ollama
-pydantic<2  # FAISS 인덱스가 pydantic v1으로 빌드됨 - 버전 고정 필수
+pydantic
 
 # --- 평가 (Evaluation) ---
 ragas
