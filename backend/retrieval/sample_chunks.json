@@ -1,0 +1,361 @@
+[
+  {
+    "query": "한영대 특성화 사업 예산 얼마야?",
+    "agency": "한영대",
+    "project_name": null,
+    "chunks": [
+      {
+        "page_content": "[사업개요] 사업명: 한영대학교 특성화 맞춤형 교육환경 구축 - 트랙운영 학사정보시스템 고도화\n발주기관: 한영대학\n사업금액(예산): 130,000,000원\n공개일자: 2024-10-04 13:51:23\n입찰참여 마감일: 2024-10-15 17:00:00\n사업요약:\n- 한영대학교 특성화 맞춤형 교육환경 구축을 위해 트랙운영 학사정보시스템을 고도화한다.\n- 트랙제도를 도입하여 다양한 진로 선택 기회를 제공하고 산업현장의 경쟁력을 강화한다.\n- 효과적인 교육과정 지원 및 대학 체제 개편에 대한 대응체계를 확립한다.\n- 트랙기반 교육과정 운영 및 관리 체계를 개선하고 교수자-학습자 중심의 교육환경을 조성한다.\n- 학사운영 시스템을 고도화하여 대학 체제 개편에 대한 대응체계를 갖출 수 있다.",
+        "metadata": {
+          "doc_id": "DOC_001",
+          "file_name": "한영대학_한영대학교 특성화 맞춤형 교육환경 구축 - 트랙운영 학사정보.hwp",
+          "section": "메타요약",
+          "content_type": "meta_summary",
+          "chunk_index": -1,
+          "page": null,
+          "token_count": 181,
+          "has_image_budget": false,
+          "pii_masked": true,
+          "budget_amount": 130000000,
+          "agency": "한영대학",
+          "project_name": "한영대학교 특성화 맞춤형 교육환경 구축 - 트랙운영 학사정보시스템 고도화",
+          "agency_normalized": "한영대학",
+          "agency_aliases": [
+            "한영대"
+          ],
+          "announcement_date": "2024-10-04",
+          "bid_start": null,
+          "bid_end": "2024-10-15",
+          "announcement_no": "20241001798",
+          "announcement_round": 0,
+          "score": 0.5026
+        }
+      },
+      {
+        "page_content": "[표]\n평가항목: 해당 사업규모 대비 입찰공고일 기준 최근 3년간 사업수행실적 건수 / 평가등급: 동등이상 사업 (3억 이상) / 평점: 6건 이상 / 열4: 5\n평가항목: 3건 이상 / 평가등급: 4\n평가항목: 2건 이상 / 평가등급: 3\n평가항목: 1건 이상 / 평가등급: 2\n평가항목: 1건 미만 / 평가등급: 1\n※\n최근 3년간 대학 대학정보/학생이력/역량사업 시스템 구축 사업 동등이상의 수행실적이",
+        "metadata": {
+          "doc_id": "DOC_001",
+          "file_name": "한영대학_한영대학교 특성화 맞춤형 교육환경 구축 - 트랙운영 학사정보.hwp",
+          "section": "Ⅳ 제안안내 사항",
+          "content_type": "table",
+          "chunk_index": 18,
+          "page": null,
+          "token_count": 103,
+          "has_image_budget": false,
+          "pii_masked": true,
+          "agency": "한영대학",
+          "project_name": "한영대학교 특성화 맞춤형 교육환경 구축 - 트랙운영 학사정보시스템 고도화",
+          "agency_normalized": "한영대학",
+          "agency_aliases": [
+            "한영대"
+          ],
+          "announcement_date": "2024-10-04",
+          "bid_start": null,
+          "bid_end": "2024-10-15",
+          "announcement_no": "20241001798",
+          "announcement_round": 0,
+          "budget_amount": 130000000,
+          "score": 0.4591
+        }
+      },
+      {
+        "page_content": "2024년 특성화 맞춤형 교육환경 구축 – 트랙운영 학사정보시스템 고도화 제안요청서\n2024. 10.\n목 차 Ⅰ. 사업 안내 1 1. 사업개요 1 2. 추진배경 및 필요성 1 3. 기대효과 1 Ⅱ. 구축 방안 2 1. 구축목표 2 2. 구축일정 2 3. 구축범위 3 Ⅲ. 제안 요청 내용 4 1. 제안 요청 개요 4 Ⅳ. 제안안내 사항 5 1. 입찰 및 계약방법 5 2. 제안서 평가방법 6 3. 제안서 작성 8 4. 제안서 평가 12 5. 제출서류 17 6. 제안서 제출일정 및 방법 17 7. 제안요청 질의 및 설명회 17 Ⅴ. 기타사항 19 Ⅵ. 참조자료 22 Ⅶ. 붙임 서식 25",
+        "metadata": {
+          "doc_id": "DOC_001",
+          "file_name": "한영대학_한영대학교 특성화 맞춤형 교육환경 구축 - 트랙운영 학사정보.hwp",
+          "section": "서두",
+          "content_type": "text",
+          "chunk_index": 0,
+          "page": null,
+          "token_count": 134,
+          "has_image_budget": false,
+          "pii_masked": true,
+          "agency": "한영대학",
+          "project_name": "한영대학교 특성화 맞춤형 교육환경 구축 - 트랙운영 학사정보시스템 고도화",
+          "agency_normalized": "한영대학",
+          "agency_aliases": [
+            "한영대"
+          ],
+          "announcement_date": "2024-10-04",
+          "bid_start": null,
+          "bid_end": "2024-10-15",
+          "announcement_no": "20241001798",
+          "announcement_round": 0,
+          "budget_amount": 130000000,
+          "score": 0.4669
+        }
+      }
+    ]
+  },
+  {
+    "query": "입찰 마감일이 언제야?",
+    "agency": "한영대",
+    "project_name": null,
+    "chunks": [
+      {
+        "page_content": "제안서는 대표이사 인감 날인 후 공문과 함께 제출(날인 없는 경우 제안 불인정)\n*\n사본에는\n‘\n사실과 상위 없음\n’\n또는\n‘\n원본대조필\n’\n을 명기하고 인감 날인 후 제출\n[\n별지 제1호 서식\n]\n입찰참가신청서\n입 찰 참 가 신 청 서 신 청 인 상호 또는 법인명칭 법인등록번호 주 소 전 화 번 호 대 표 자 생 년 월 일 입찰 개요 입 찰 공 고 제2024-00호 입 찰 일 자 2024년 월 일 입 찰 건 명 IP-NAVI 해외지식재산센터 사업관리 시스템 기능개선 입 찰 보 증 금 납 부 ㆍ 보증금율 : 2.5% 보 증 액 : 금 원정( ₩ ) ㆍ 보증납부금액 : 이행(입찰) 보증 보험 증권 납 부 면 제 및 지 급 확 약 ㆍ 사유 : ㆍ 본인은 낙찰 후 계약 미체결 시 귀원에 낙찰금액에 해당하는 입찰보증보험증권을 납부할 것을 확약합니다. 대사 리용 인인 감 본 입찰에 관한 일체의 권한을 다음의 자에게 위임합니다. 성명 생년월일 본 입찰에 사용할 인감을 다음과 같이 신고합니다. 사용 인감 󰄫 본 업체는 위의 번호로 공고한 한국지식재산보호원 「 해외지식재산센터 지원사업 관리 시스템 구축 사 업 」 입찰에 참가하고자, 한국지식재산보호원에서 정한 제안(계획)서 및 입찰 공고사항을 모두 승낙하고 별첨 서류를 첨부하여 입찰참가 신청을 합니다. 제 출 일 2024년 월 일 상 호 신 청 인 (인감날인) 한국지식재산보호원장 귀하 제 출 일 2024년 월 일 상 호 신 청 인 (인감날인) 제출서류 - 확인서 [ 별지 제2호 서식 ] 1부 - 보안각서 [ 별지 제3호 서식 ] 1부 - 사업자등록증 1부 - 법인등기부 등본(개인사업자일 경우 대표자 주민등록등본 전체) 1부 - 법인 인감증명서(개인사업자일 경우 대표자 인감증명서 전체) 1부 - (사용인감 사용 시) 사용인감계 [ 별지 제4호 서식 ] 1부 - 이행(입찰)보증보험증권 (입찰금액의 2.5/100, 보증기간 : 입찰서제출마감일 이전 ~ 입찰제출마감일 다음날부터 30일 이후) 1부\n[\n별지 제2호 서식\n]\n동의서\n동 의 서",
+        "metadata": {
+          "doc_id": "DOC_079",
+          "file_name": "한국지식재산보호원_IP-NAVI  해외지식재산센터 사업관리 시스템 기능개.hwp",
+          "section": "서두",
+          "content_type": "text",
+          "chunk_index": 59,
+          "page": null,
+          "token_count": 465,
+          "has_image_budget": false,
+          "pii_masked": true,
+          "agency": "한국지식재산보호원",
+          "project_name": "IP-NAVI  해외지식재산센터 사업관리 시스템 기능개선",
+          "agency_normalized": "한국지식재산보호원",
+          "agency_aliases": [],
+          "announcement_date": "2024-06-18",
+          "bid_start": "2024-06-18",
+          "bid_end": "2024-07-02",
+          "announcement_no": "20240623903",
+          "announcement_round": 0,
+          "budget_amount": 60000000,
+          "score": 0.5188
+        }
+      },
+      {
+        "page_content": "□ 해당 당사는 동 건의 입찰공고일자 기준, 아래 표와 같이 EDCF 부정당업자 제재를 받고 있는 입찰자 또는 다자개 발은행( MDB) 으로부터 부패행위와 사실왜곡 등 부정당행 위로 인하여 상호제재( Cross Debarment) 를 받고 있는 입 찰자임을 알려드리며, 그에 따라 평가기준에 의거 본건 입찰에 불이익이 존재함을 인지하고 있습니다. □ 미 해당 입찰 공고일자 기준 EDCF 부정당업자 제재 또는 MDB 상호제 재가 아닌 경우\nㅇ 입찰공고일자 기준,\nEDCF\n제재 또는\nMDB\n상호제재 진행 사항\n(가장 최근 건부터 최대 3건 기재. 기재사항 없다면 기재란에 해당없음 기재)",
+        "metadata": {
+          "doc_id": "DOC_090",
+          "file_name": "한국수출입은행_(긴급) 모잠비크 마푸토 지능형교통시스템(ITS) 구축사업.hwp",
+          "section": "서두",
+          "content_type": "text",
+          "chunk_index": 597,
+          "page": null,
+          "token_count": 152,
+          "has_image_budget": false,
+          "pii_masked": true,
+          "agency": "한국수출입은행",
+          "project_name": "(긴급) 모잠비크 마푸토 지능형교통시스템(ITS) 구축사업 사업타당성조사(F/S) 용역",
+          "agency_normalized": "한국수출입은행",
+          "agency_aliases": [],
+          "announcement_date": "2024-10-04",
+          "bid_start": "2024-10-28",
+          "bid_end": "2024-11-05",
+          "announcement_no": "20240925413",
+          "announcement_round": 0,
+          "budget_amount": 1247000000,
+          "score": 0.4729
+        }
+      },
+      {
+        "page_content": "업무내용 및 추진일정은 과업수행과정에서 일부 조정될 수 있음\n5. 추진 방안\n입찰 및 평가 방식",
+        "metadata": {
+          "doc_id": "DOC_065",
+          "file_name": "한국농어촌공사_네팔 수자원관리 정보화사업-Pilot 시스템 구축용역.hwp",
+          "section": "Ⅲ 사업추진 계획",
+          "content_type": "text",
+          "chunk_index": 6,
+          "page": null,
+          "token_count": 27,
+          "has_image_budget": false,
+          "pii_masked": true,
+          "agency": "한국농어촌공사",
+          "project_name": "네팔 수자원관리 정보화사업-Pilot 시스템 구축용역",
+          "agency_normalized": "한국농어촌공사",
+          "agency_aliases": [],
+          "announcement_date": "2024-05-31",
+          "bid_start": "2024-05-31",
+          "bid_end": "2024-05-31",
+          "announcement_no": "20240541684",
+          "announcement_round": 0,
+          "budget_amount": 181913000,
+          "score": 0.4753
+        }
+      },
+      {
+        "page_content": "신용평가등급확인서의 유효기간이 입찰공고인 전일 이전에 평가한 것으로, 유효기간 내에\n있는 것만 인정한다. (유효기간 만료일이 입찰공고일인 경우도 인정)\n­\n신용평가등급확인서를 제출하지 않거나 유효기간이 인정되지 않을 경우 최저등급으로 평가한다.",
+        "metadata": {
+          "doc_id": "DOC_096",
+          "file_name": "대한적십자사 의료원_적십자병원 병원정보 재해복구시스템 구축 용역 .hwp",
+          "section": "Ⅴ 제안안내 사항",
+          "content_type": "text",
+          "chunk_index": 56,
+          "page": null,
+          "token_count": 71,
+          "has_image_budget": false,
+          "pii_masked": true,
+          "agency": "대한적십자사 의료원",
+          "project_name": "적십자병원 병원정보 재해복구시스템 구축 용역 재공고입찰",
+          "agency_normalized": "대한적십자사 의료원",
+          "agency_aliases": [],
+          "announcement_date": "2024-04-04",
+          "bid_start": "2024-04-11",
+          "bid_end": "2024-04-15",
+          "announcement_no": "20240409322",
+          "announcement_round": 0,
+          "budget_amount": 500000000,
+          "score": 0.4767
+        }
+      },
+      {
+        "page_content": "입찰참가신청 서류의 미제출 또는 허위제출 시 참가자격의 제한을 받을 수 있습니다\n.\n【\n붙임1\n】\n용역사업 보안위규 처리기준\n용역사업 보안위규 처리기준",
+        "metadata": {
+          "doc_id": "DOC_075",
+          "file_name": "재단법인 광주연구원_광주정책연구아카이브(GPA) 시스템 개발.hwp",
+          "section": "Ⅴ 제안서 제출 및 평가 안내",
+          "content_type": "text",
+          "chunk_index": 76,
+          "page": null,
+          "token_count": 43,
+          "has_image_budget": false,
+          "pii_masked": true,
+          "agency": "재단법인 광주연구원",
+          "project_name": "광주정책연구아카이브(GPA) 시스템 개발",
+          "agency_normalized": "광주연구원",
+          "agency_aliases": [
+            "재단법인 광주연구원"
+          ],
+          "announcement_date": "2024-10-28",
+          "bid_start": "2024-11-06",
+          "bid_end": "2024-11-08",
+          "announcement_no": "20241021784",
+          "announcement_round": 0,
+          "budget_amount": 43000000,
+          "score": 0.4944
+        }
+      }
+    ]
+  },
+  {
+    "query": "제안요청 주요 내용 알려줘",
+    "agency": "한영대",
+    "project_name": null,
+    "chunks": [
+      {
+        "page_content": "제안내용을 보충하기 위한 참고문헌 활용시 목록 첨부, 인용부분 명시\n\n내용은 명확한 용어를 사용하여야 하며,\n‘\n~\n를 제공할 수도 있다.\n’, ‘\n~\n이 가능\n하다.\n’, ‘\n~\n를 고려한다.\n’\n등과 같은 모호한 표현은 평가시 불가능한 것으로 평가\n\n제안서는 허위 또는 예상으로 작성하지 않아야 하며, 모든 기재사항은 객관적\n으로 입증할 수 있어야 하고, 허위로 작성한 사실이 발견될 시에는 평가대상에\n서 제외\n- 계약 후에도 제안서의 내용을 허위로 작성한 사실이 발견 될 경우\n제안 업체는 계약 해지 등 그에 따르는 책임을 짐\n\n제출된 제안서의 내용은 주관기관의 요청이 없는 한 수정ㆍ추가ㆍ대체ㆍ삭제\n할 수 없으며, 계약 체결 시 계약조건의 일부로 간주\n\n기술적인 설명자료 또는 제안서의 내용을 객관적으로 입증하기 위한 관련 자\n료 등 내용이 많을 경우 별지를 사용하여 작성 가능\n\n제출된 제안서는 제안업체가 반환을 요구할 경우 반환함.\n\n제안요청서에 누락된 사항이라도 사업수행을 위하여 반드시 필요한 사항은\n제안서에 포함하여 제출\n\n각종 증거서류의 표지에는 원본과 사본의 구분을 표시하여야 하며, 사본일 경\n우 원본대조필인을 날인하여야 하고 원본과 사본의 내용이 상이할 경우 원본\n내용 우선 채택\n나. 제안서 작성 목차\n제안서 목차 Ⅰ. 제안 개요 Ⅱ. 제안업체 현황 1. 일반현황 2. 조직 3. 주요사업 내용 및 실적 Ⅲ. 전략 및 방법론 1. 사업 이해도 2. 추진 전략 Ⅳ. 기술 및 기능 1. 시스템 현황 분석 2. 기능 요구사항 3. 성능 요구사항 4. 인터페이스 요구사항 5. 보안 요구사항 6. 품질 요구사항 Ⅴ. 프로젝트 관리 1. 관리 방법론 2. 일정 계획 Ⅵ. 프로젝트 지원 1. 품질보증 2. 교육훈련 3. 유지관리 4. 기밀보안 5. 비상대책 Ⅶ. 기타사항 ※ 제시된 순서를 준수하되, 세부내용은 업체 재량에 따라 작성 가능 Ⅰ. 제안 개요 Ⅱ. 제안업체 현황 1. 일반현황 2. 조직 3. 주요사업 내용 및 실적 Ⅲ. 전략 및 방법론 1. 사업 이해도 2. 추진 전략 Ⅳ. 기술 및 기능 1. 시스템 현황 분석 2. 기능 요구사항 3. 성능 요구사항 4. 인터페이스 요구사항 5. 보안 요구사항 6. 품질 요구사항 Ⅴ. 프로젝트 관리 1. 관리 방법론 2. 일정 계획 Ⅵ. 프로젝트 지원 1. 품질보증 2. 교육훈련 3. 유지관리 4. 기밀보안 5. 비상대책 Ⅶ. 기타사항\n다. 제안서 세부작성지침",
+        "metadata": {
+          "doc_id": "DOC_037",
+          "file_name": "부산관광공사_경영정보시스템 기능개선.hwp",
+          "section": "Ⅴ 제안일반사항",
+          "content_type": "text",
+          "chunk_index": 71,
+          "page": null,
+          "token_count": 561,
+          "has_image_budget": false,
+          "pii_masked": true,
+          "agency": "부산관광공사",
+          "project_name": "경영정보시스템 기능개선",
+          "agency_normalized": "부산관광공사",
+          "agency_aliases": [],
+          "announcement_date": "2024-04-08",
+          "bid_start": "2024-04-17",
+          "bid_end": "2024-04-19",
+          "announcement_no": "20240414353",
+          "announcement_round": 0,
+          "budget_amount": 109000000,
+          "score": 0.5394
+        }
+      },
+      {
+        "page_content": "제안서 작성 시 제안요청서 요구사항에 명시되지 않았으나 제안업체 판단으로 추가\n되어야 할 요구사항에 대해서는 별도 표시하여 추가 작성 가능\n□\n요구사항 목록",
+        "metadata": {
+          "doc_id": "DOC_057",
+          "file_name": "서민금융진흥원_서민금융진흥원 서민금융 채팅 상담시스템 구축.hwp",
+          "section": "Ⅰ . 사업 개요",
+          "content_type": "text",
+          "chunk_index": 9,
+          "page": null,
+          "token_count": 45,
+          "has_image_budget": true,
+          "pii_masked": true,
+          "agency": "서민금융진흥원",
+          "project_name": "서민금융진흥원 서민금융 채팅 상담시스템 구축",
+          "agency_normalized": "서민금융진흥원",
+          "agency_aliases": [],
+          "announcement_date": "2024-06-11",
+          "bid_start": "2024-06-11",
+          "bid_end": "2024-06-24",
+          "announcement_no": "20240611568",
+          "announcement_round": 0,
+          "budget_amount": 230000000,
+          "score": 0.5273
+        }
+      },
+      {
+        "page_content": "제안요청서\n사 업 명 연차별 자율 품질관리 시스템 기능개선 주관기관 한국보육진흥원\n2024. 4.\n목 차 Ⅰ. 사업안내 1 1. 사업개요 1 2. 추진목적 및 필요성 1 3. 사업내용 1 Ⅱ. 사업추진 방안 2 1. 추진방향 2 2. 홈페이지 운영 현황 3 3. 기능 메뉴도(안) 4 4. 추진 체계 5 5. 추진 일정 5 Ⅲ. 제안요청내용 6 1. 요구사항 목록 6 2. 요구사항 세부내용 8 Ⅳ. 제안 안내 36 1. 입찰안내 36 2. 입찰 시 유의사항 42 Ⅴ. 제안서 작성요령 45 1. 제안서의 효력 45 2. 제안서 작성지침(권고사항) 및 유의사항 45 3. 제안목차 47 4. 세부 작성지침 48 [ 붙임자료 ] 1. 제안서 관련 서식 2. 계약관련 서류",
+        "metadata": {
+          "doc_id": "DOC_092",
+          "file_name": "한국보육진흥원_연차별 자율 품질관리 시스템 기능개선.hwp",
+          "section": "서두",
+          "content_type": "text",
+          "chunk_index": 0,
+          "page": null,
+          "token_count": 157,
+          "has_image_budget": false,
+          "pii_masked": true,
+          "agency": "한국보육진흥원",
+          "project_name": "연차별 자율 품질관리 시스템 기능개선",
+          "agency_normalized": "한국보육진흥원",
+          "agency_aliases": [],
+          "announcement_date": "2024-04-18",
+          "bid_start": "2024-04-30",
+          "bid_end": "2024-05-03",
+          "announcement_no": "20240429895",
+          "announcement_round": 0,
+          "budget_amount": 75000000,
+          "score": 0.5129
+        }
+      },
+      {
+        "page_content": "제안서 목차는 주요내용이 포함되는 한도에서 작성기관이 일부 변경할 수 있음\n다. 가격제안서\n❍\n가격입찰은\n국가종합전자조달시스템(\nG2B)\n지문인식 신원확인을 이용한\n전\n자\n입찰서를 제출함\n※ 가격 제안 시 유의사항 - 고정단가(비용) 항목은 단가조정 불가 항목임 - 실비정산 항목은 계약금액 범위 내에서 실비정산 항목임\n❍\n가격제안서 작성방법\n(기술용역비 산정, 집행 및 정산기준지침 참조)\n고정단가 확인 필수",
+        "metadata": {
+          "doc_id": "DOC_073",
+          "file_name": "사단법인아시아물위원회사무국_우즈벡-키르기즈스탄 기후변화대응 스.hwp",
+          "section": "Ⅳ 제안서 작성 안내사항",
+          "content_type": "text",
+          "chunk_index": 26,
+          "page": null,
+          "token_count": 114,
+          "has_image_budget": false,
+          "pii_masked": true,
+          "agency": "사단법인아시아물위원회사무국",
+          "project_name": "우즈벡-키르기즈스탄 기후변화대응 스마트 관개시스템 구축사업",
+          "agency_normalized": "아시아물위원회사무국",
+          "agency_aliases": [
+            "사단법인아시아물위원회사무국"
+          ],
+          "announcement_date": "2024-10-22",
+          "bid_start": "2024-10-22",
+          "bid_end": "2024-11-04",
+          "announcement_no": "20241014232",
+          "announcement_round": 0,
+          "budget_amount": 5031000000,
+          "score": 0.5051
+        }
+      },
+      {
+        "page_content": "제안요청서에 명시하지 않았더라도 사업 진행에 꼭 필요한 기본 항목은\n모두 포함하는 것을 원칙으로 하며, 협의를 통해 최종 결정함.\n사업내용이 변경될 경우에는 과업 변경절차에 따라 상호 협의하여 결정\n하며, 제안사 판단으로 추가되어야 할 요구사항에 대해서는 별도 표시하\n여 추가 작성 가능함.\n제안사는 제안요청서에 기술된 요구사항을 기반으로 제안하되, 업무분석\n단계에서 보다 창의적인 방법으로 요구사항을 해석\n·\n정제하여 사업에 반\n영해야 함.\n제안요청서 상의 용어는 일반적인 통념에 따라 해석하되, 해석상의 차이\n가 있거나 별도의 언급이 없을 경우에는 발주기관의 의견에 따름.\n4. 결과물 제출\n사업 완료에 따른 완료보고서 제출\n완료계\n디자인 원본 소스 일체\n시스템 관리자(운영자) 매뉴얼\n하자유지보수보증보험증권 1부\n※\n사업의 하자담보책임기간은 사업을 종료한 날(사업에 대한 시험 및 검사를 수행하여\n최종출물을 인도한 날을 말함)부터 1년으로 함\n5. 완료 후 교육지원 방안 제시\n업무담당자에 대해 사용 및 기술교육 실시\n교육내용 : 시스템 운영, 사이트 관리 및 사용방법, 표준화\n교육기간 : 약 1주 이내",
+        "metadata": {
+          "doc_id": "DOC_093",
+          "file_name": "조선대학교_(재공고)2024 조선대학교 SW중심대학 사업관리시스템(WeHub) 구.hwp",
+          "section": "Ⅱ 사업 제안 요청 기본사항",
+          "content_type": "text",
+          "chunk_index": 133,
+          "page": null,
+          "token_count": 283,
+          "has_image_budget": false,
+          "pii_masked": true,
+          "agency": "조선대학교",
+          "project_name": "(재공고)2024 조선대학교 SW중심대학 사업관리시스템(WeHub) 구축",
+          "agency_normalized": "조선대학교",
+          "agency_aliases": [
+            "조선대",
+            "조선대학"
+          ],
+          "announcement_date": "2024-11-04",
+          "bid_start": null,
+          "bid_end": "2024-11-20",
+          "announcement_no": "20241103380",
+          "announcement_round": 0,
+          "budget_amount": 100000000,
+          "score": 0.5227
+        }
+      }
+    ]
+  }
+]

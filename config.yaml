@@ -1,0 +1,32 @@
+# RAG 파이프라인
+retriever_type: "naive_rag"  # naive_rag / agentic_rag
+top_k: 5
+
+# 임베딩
+embedding_model: "text-embedding-3-small"
+
+# 생성 모델
+llm_model: "gpt-5-mini"
+temperature: 0.2
+top_p: 0.9
+max_tokens: 1024
+
+# Ollama (시나리오 A / LLM Judge용)
+# 주소는 환경 종속값이라 .env의 OLLAMA_BASE_URL로 분리
+# 후보 모델 (평가 시 ollama_model 값만 바꿔가며 실험):
+#   qwen3:8b      - 한국어/다국어 품질 우수 (1순위 유력)
+#   llama3.1:8b   - 안정 베이스라인 / 백업
+#   gemma2:9b     - 속도-품질 균형형
+#   llama3.2      - 환경 점검용 테스트 모델 (2GB, 실서비스 부적합)
+ollama_model: "llama3.2"   # 현재 사용 모델 (평가하며 위 후보로 교체)
+
+# 대화 메모리
+max_history: 10
+memory:
+  window_size: 5
+
+# 평가
+evaluation:
+  golden_dataset_path: "./golden/golden_dataset.json"
+  sample_size: 60
+  judge_model: "gpt-5-mini"
