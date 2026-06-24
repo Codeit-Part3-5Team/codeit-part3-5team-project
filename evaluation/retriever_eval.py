@@ -1,32 +1,34 @@
 """
+retriever_eval.py
 Retriever Evaluation
 지표: Hit Rate@5, MRR, Context Recall, Context Precision
 
 사용법:
-    pip install ragas langchain openai datasets
+    python evaluation/retriever_eval.py
 
 구조:
     - evaluate_retriever()  : Hit Rate@5, MRR 계산 (retriever only)
-    - evaluate_ragas()      : Context Recall, Context Precision 계산
+    - evaluate_context()    : Context Recall, Context Precision 계산 (doc_id 기반, LLM 불필요)
     - compare()             : 이전/이후 결과 비교 출력
 """
 
-import os
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent / "backend" / "retrieval"))
+
 import json
 from dataclasses import dataclass, field
 import numpy as np
-from datasets import Dataset
-from ragas import evaluate
-from ragas.metrics import (
-    context_recall,
-    context_precision,
-)
 from dotenv import load_dotenv
 
 load_dotenv()
 
+from retriever import get_retriever, load_vectorstore
 
+
+# ──────────────────────────────────────────────
 # 데이터 구조
+# ──────────────────────────────────────────────
 
 @dataclass
 class EvalSample:
@@ -38,29 +40,41 @@ class EvalSample:
     relevant_doc_ids: list[str] = field(default_factory=list)   # 정답 문서 ID
     retrieved_doc_ids: list[str] = field(default_factory=list)  # 검색된 문서 ID (순서 있음)
 
-# 샘플 데이터 로드
 
-def load_eval_samples(json_path: str) -> list[EvalSample]:
+# ──────────────────────────────────────────────
+# 골든 데이터셋 로드
+# ──────────────────────────────────────────────
+
+def load_eval_samples_from_golden(json_path: str) -> list[EvalSample]:
+    """골든데이터셋 + retriever 결과로 EvalSample 리스트 생성"""
     with open(json_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+        golden = json.load(f)
 
+    vs = load_vectorstore()
     samples = []
-    for item in data:
+    for item in golden:
+        results = get_retriever(item["question"], vs)
         samples.append(EvalSample(
-            question=item["query"],
-            answer="", #LLM 답변 없으므로 빈값
-            contexts=[c["page_content"] for c in item["chunks"]],
-            ground_truth="", # 정답 없으므로 빈값
-            retrieved_doc_ids=[c["metadata"]["doc_id"] for c in item["chunks"]],
+            question=item["question"],
+            answer="",
+            contexts=[doc.page_content for doc in results],
+            ground_truth=item["answer"],
+            relevant_doc_ids=(
+                item["answer_doc_id"] if isinstance(item["answer_doc_id"], list)
+                else [item["answer_doc_id"]] if isinstance(item["answer_doc_id"], str)
+                else []
+            ),
+            retrieved_doc_ids=[doc.metadata["doc_id"] for doc in results],
         ))
     return samples
 
+
+# ──────────────────────────────────────────────
 # Retriever 지표 (Hit Rate@K, MRR)
+# ──────────────────────────────────────────────
 
 def hit_rate_at_k(samples: list[EvalSample], k: int = 5) -> float:
-    """
-    Hit Rate@K: 정답 문서가 상위 K개 안에 하나라도 있으면 hit
-    """
+    """Hit Rate@K: 정답 문서가 상위 K개 안에 하나라도 있으면 hit"""
     hits = 0
     for s in samples:
         retrieved_k = s.retrieved_doc_ids[:k]
@@ -70,9 +84,7 @@ def hit_rate_at_k(samples: list[EvalSample], k: int = 5) -> float:
 
 
 def mean_reciprocal_rank(samples: list[EvalSample]) -> float:
-    """
-    MRR: 첫 번째 정답 문서의 역순위 평균
-    """
+    """MRR: 첫 번째 정답 문서의 역순위 평균"""
     rr_list = []
     for s in samples:
         rr = 0.0
@@ -92,45 +104,36 @@ def evaluate_retriever(samples: list[EvalSample], k: int = 5) -> dict:
     }
 
 
-# RAGAS 지표
+# ──────────────────────────────────────────────
+# doc_id 기반 Context Precision, Context Recall
+# ──────────────────────────────────────────────
 
-def evaluate_ragas(
-    samples: list[EvalSample],
-    llm=None,
-    embeddings=None,
-) -> dict:
+def evaluate_context(samples: list[EvalSample], k: int = 5) -> dict:
     """
-    RAGAS 지표 계산: Context Recall, Context Precision
+    doc_id 기반 Context Precision, Context Recall 계산 (LLM 불필요)
 
-    llm, embeddings 미지정 시 환경변수 OPENAI_API_KEY로 gpt-4o-mini 사용
+    Context Precision: 검색된 k개 중 정답 doc_id 비율
+    Context Recall: 정답 doc_id가 검색 결과에 있는지 여부
     """
-    data = {
-        "question":     [s.question     for s in samples],
-        "answer":       [s.answer       for s in samples],
-        "contexts":     [s.contexts     for s in samples],
-        "ground_truth": [s.ground_truth for s in samples],
+    precision_list = []
+    recall_list = []
+    for s in samples:
+        retrieved_k = s.retrieved_doc_ids[:k]
+        relevant = set(s.relevant_doc_ids)
+
+        hits = sum(1 for doc_id in retrieved_k if doc_id in relevant)
+        precision_list.append(hits / len(retrieved_k) if retrieved_k else 0.0)
+        recall_list.append(1.0 if any(doc_id in relevant for doc_id in retrieved_k) else 0.0)
+
+    return {
+        "Context Recall": round(float(np.mean(recall_list)), 4),
+        "Context Precision": round(float(np.mean(precision_list)), 4),
     }
-    dataset = Dataset.from_dict(data)
-
-    metrics = [context_recall, context_precision]
-
-    kwargs = {}
-    if llm:
-        kwargs["llm"] = llm
-    if embeddings:
-        kwargs["embeddings"] = embeddings
-
-    result = evaluate(dataset, metrics=metrics, **kwargs)
-    result_dict = result.to_pandas().mean(numeric_only=True).to_dict()
-
-    mapping = {
-        "context_recall":    "Context Recall",
-        "context_precision": "Context Precision",
-    }
-    return {mapping.get(k, k): round(float(v), 4) for k, v in result_dict.items()}
 
 
+# ──────────────────────────────────────────────
 # 이전/이후 비교 출력
+# ──────────────────────────────────────────────
 
 METRIC_ORDER = [
     "Hit Rate @5",
@@ -144,8 +147,6 @@ def compare(
     before_samples: list[EvalSample],
     after_samples: list[EvalSample],
     k: int = 5,
-    llm=None,
-    embeddings=None,
 ) -> dict:
     """
     이전/이후 전체 지표 계산 후 비교 테이블 출력
@@ -156,12 +157,12 @@ def compare(
     print("▶ [이전] 평가 중...")
     before = {}
     before.update(evaluate_retriever(before_samples, k))
-    before.update(evaluate_ragas(before_samples, llm, embeddings))
+    before.update(evaluate_context(before_samples, k))
 
     print("▶ [이후] 평가 중...")
     after = {}
     after.update(evaluate_retriever(after_samples, k))
-    after.update(evaluate_ragas(after_samples, llm, embeddings))
+    after.update(evaluate_context(after_samples, k))
 
     delta = {m: round(after.get(m, 0) - before.get(m, 0), 4) for m in METRIC_ORDER}
 
@@ -184,63 +185,10 @@ def compare(
     return {"before": before, "after": after, "delta": delta}
 
 
-# 실행 예시
+# ──────────────────────────────────────────────
+# 실행
+# ──────────────────────────────────────────────
 
 if __name__ == "__main__":
-    from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-    llm = ChatOpenAI(model="gpt-5-mini")
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-
-    # ── 샘플 데이터 (실제 데이터로 교체) ──
-    before_samples = [
-        EvalSample(
-            question="파이썬에서 리스트와 튜플의 차이는?",
-            answer="리스트는 변경 가능하고 튜플은 변경 불가능합니다.",
-            contexts=[
-                "리스트(list)는 mutable 자료형으로 요소를 추가·수정·삭제할 수 있습니다.",
-                "딕셔너리는 키-값 쌍으로 구성된 자료형입니다.",
-            ],
-            ground_truth="리스트는 mutable(변경 가능)하며 튜플은 immutable(변경 불가능)합니다. 리스트는 [], 튜플은 ()로 생성합니다.",
-            relevant_doc_ids=["doc_001"],
-            retrieved_doc_ids=["doc_003", "doc_001", "doc_007"],
-        ),
-        EvalSample(
-            question="GIL이란 무엇인가?",
-            answer="GIL은 Global Interpreter Lock으로 한 번에 하나의 스레드만 파이썬 바이트코드를 실행합니다.",
-            contexts=[
-                "GIL(Global Interpreter Lock)은 CPython 인터프리터의 뮤텍스입니다.",
-                "멀티스레딩 환경에서 GIL은 동시에 하나의 스레드만 실행되도록 제한합니다.",
-            ],
-            ground_truth="GIL은 CPython에서 스레드 안전성을 보장하기 위해 한 번에 하나의 스레드만 파이썬 객체에 접근하도록 제한하는 메커니즘입니다.",
-            relevant_doc_ids=["doc_012"],
-            retrieved_doc_ids=["doc_012", "doc_015"],
-        ),
-    ]
-
-    # 이후 샘플: 동일 질문에 개선된 retriever 결과 적용
-    after_samples = [
-        EvalSample(
-            question="파이썬에서 리스트와 튜플의 차이는?",
-            answer="리스트는 mutable(변경 가능)하고 튜플은 immutable(변경 불가능)합니다. 리스트는 [], 튜플은 ()를 사용합니다.",
-            contexts=[
-                "리스트(list)는 mutable 자료형으로 요소를 추가·수정·삭제할 수 있습니다.",
-                "튜플(tuple)은 immutable 자료형으로 한 번 생성하면 변경할 수 없습니다.",
-            ],
-            ground_truth="리스트는 mutable(변경 가능)하며 튜플은 immutable(변경 불가능)합니다. 리스트는 [], 튜플은 ()로 생성합니다.",
-            relevant_doc_ids=["doc_001"],
-            retrieved_doc_ids=["doc_001", "doc_002", "doc_003"],
-        ),
-        EvalSample(
-            question="GIL이란 무엇인가?",
-            answer="GIL(Global Interpreter Lock)은 CPython에서 스레드 안전성을 위해 한 번에 하나의 스레드만 파이썬 객체에 접근하도록 제한하는 메커니즘입니다.",
-            contexts=[
-                "GIL(Global Interpreter Lock)은 CPython 인터프리터의 뮤텍스입니다.",
-                "GIL로 인해 멀티코어 CPU에서도 병렬 실행이 제한될 수 있습니다.",
-            ],
-            ground_truth="GIL은 CPython에서 스레드 안전성을 보장하기 위해 한 번에 하나의 스레드만 파이썬 객체에 접근하도록 제한하는 메커니즘입니다.",
-            relevant_doc_ids=["doc_012"],
-            retrieved_doc_ids=["doc_012", "doc_013"],
-        ),
-    ]
-
-    results = compare(before_samples, after_samples, k=5, llm=llm, embeddings=embeddings)
+    samples = load_eval_samples_from_golden("evaluation/golden_dataset_v2.json")
+    results = compare(samples, samples, k=5)
