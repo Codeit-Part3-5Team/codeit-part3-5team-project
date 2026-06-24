@@ -53,6 +53,8 @@ def load_eval_samples_from_golden(json_path: str) -> list[EvalSample]:
     vs = load_vectorstore()
     samples = []
     for item in golden:
+        if item.get("category") == "refusal":
+            continue
         results = get_retriever(item["question"], vs)
         samples.append(EvalSample(
             question=item["question"],
