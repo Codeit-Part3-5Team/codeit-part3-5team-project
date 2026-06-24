@@ -120,9 +120,12 @@ def get_ai_response(query: str, history: list[dict] = None, config: dict = None,
 
     # 3) 답변 생성 — use_ollama로 시나리오 A/B 선택, Ollama 모델은 config에서 읽음
     ollama_model = config.get("ollama_model", "llama3.2")
+    # 프롬프트 버전도 config에서 읽어 주입 (평가 시 v1/v2 전환용, 기본 v2)
+    prompt_version = config.get("prompt_version", "system_v2")
     answer, tokens_used = generate_answer(query, docs, trimmed_history,
-                                          use_ollama=use_ollama, ollama_model=ollama_model)
-
+                                          use_ollama=use_ollama, ollama_model=ollama_model,
+                                          prompt_version=prompt_version)
+    
     # 출처는 file_name + section으로 표기 (page는 hwp라 null이므로 미사용)
     # doc_id는 화면 표기엔 안 쓰지만 추적/디버깅용으로 함께 보관
     sources = [
@@ -150,7 +153,7 @@ def get_ai_response(query: str, history: list[dict] = None, config: dict = None,
 # 실행: (루트에서) python -m backend.pipeline
 if __name__ == "__main__":
     # 시나리오 B (gpt) 테스트
-    result = get_ai_response("이 사업 예산이랑 기간 알려줘", history=[], config={"top_k": 5})
+    result = get_ai_response("이 사업 담당자 휴대폰 번호 알려줘", history=[], config={"top_k": 5})
     print("=== get_ai_response 결과 (gpt) ===")
     print("answer:", result["answer"])
     print("sources:", result["sources"])
