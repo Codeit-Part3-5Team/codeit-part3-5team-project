@@ -17,27 +17,42 @@ from utils.config import load_config            # config.yaml 읽기
 # ragas 0.4.x 기준 import 경로 (버전 다르면 경로 바뀔 수 있음)
 from ragas import evaluate, EvaluationDataset, SingleTurnSample
 from ragas.metrics import Faithfulness, ResponseRelevancy
-from ragas.llms import LangchainLLMWrapper
+from ragas.llms import llm_factory
 from ragas.embeddings import LangchainEmbeddingsWrapper
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
+from openai import OpenAI
+import os
+
+def _strip_sources(answer: str) -> str:
+    """답변에서 [출처: ...] 표기 제거. ragas가 출처를 별도 claim으로 잡아 Faithfulness를 깎는 것 방지."""
+    return answer.split("[출처")[0].strip()
 
 
 def _build_judge(config: dict) -> tuple:
     """
     ragas 채점에 쓸 judge LLM(gpt-5-mini)과 임베딩을 구성한다.
 
+    gpt-5 계열은 temperature를 1만 허용하는데 LangchainLLMWrapper 경로에서는
+    ragas가 temperature(0.01)를 강제 주입해 400 에러로 nan이 발생한다.
+    따라서 ragas 권장 방식인 llm_factory로 OpenAI 클라이언트를 직접 주입하고,
+    gpt-5의 reasoning 토큰으로 출력이 잘리지 않도록 max_tokens를 넉넉히 둔다.
+
     Args:
-        config: 설정 dict (llm_model, judge_temperature 등)
+        config: 설정 dict (judge_model, embedding_model 등)
     Returns:
-        tuple: (LangchainLLMWrapper, LangchainEmbeddingsWrapper)
+        tuple: (ragas judge LLM, LangchainEmbeddingsWrapper)
     """
-    # gpt-5-mini는 극소 temperature(예: 1e-8)에서 ragas가 nan을 반환하므로 지원 범위(기본 1.0) 사용
-    judge_temp = config.get("judge_temperature", 1.0)
-    llm_model = config.get("llm_model", "gpt-5-mini")
-    # 임베딩은 검색과 동일 모델 사용 (Answer Relevance의 질문-역질문 유사도 계산용)
+    # 채점자 모델은 evaluation.judge_model 우선, 없으면 llm_model, 그것도 없으면 gpt-5-mini
+    judge_model = config.get("evaluation", {}).get("judge_model") \
+        or config.get("llm_model", "gpt-5-mini")
     embed_model = config.get("embedding_model", "text-embedding-3-small")
 
-    judge_llm = LangchainLLMWrapper(ChatOpenAI(model=llm_model, temperature=judge_temp))
+    # llm_factory: langchain 경유 없이 OpenAI 클라이언트 직접 주입 (temperature 강제주입 회피)
+    judge_llm = llm_factory(
+        judge_model,
+        client=OpenAI(api_key=os.getenv("OPENAI_API_KEY")),
+        max_tokens=4000,   # gpt-5 reasoning 토큰 포함, 출력 잘림 방지
+    )
     judge_emb = LangchainEmbeddingsWrapper(OpenAIEmbeddings(model=embed_model))
     return judge_llm, judge_emb
 
@@ -56,7 +71,7 @@ def _to_dataset(samples: list[dict]) -> EvaluationDataset:
         # 내부 키 → ragas 필드 매핑
         rows.append(SingleTurnSample(
             user_input=s["question"],            # 질문
-            response=s["answer"],                # 생성 답변
+            response=_strip_sources(s["answer"]),  # 생성 답변(출처 표기 제거 — 환각 오판 방지)
             retrieved_contexts=s["contexts"],    # 검색된 청크 리스트(list[str])
             reference=s.get("ground_truth", ""), # 정답 텍스트(faithfulness/AR엔 미사용, 형식 통일용)
         ))
