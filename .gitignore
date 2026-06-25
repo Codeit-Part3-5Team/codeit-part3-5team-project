@@ -24,6 +24,7 @@ build/
 .venv/
 venv/
 env/
+venv-gen/
 
 # === Node (챗봇 프론트엔드용) ===
 node_modules/
