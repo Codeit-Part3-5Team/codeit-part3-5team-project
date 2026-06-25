@@ -28,8 +28,10 @@ def normalize_for_quote_match(text: str) -> str:
         return ""
     t = unicodedata.normalize("NFKC", text)
     t = re.sub(r"[\u200B-\u200D\uFEFF]", "", t)   # zero-width 제거
-    t = t.replace("–", "-").replace("—", "-")      # 대시 통일
-    t = re.sub(r"\s+", " ", t)                     # 연속 공백 → 하나 (삭제 아님)
+    t = t.replace("–", "-").replace("—", "-")
+    t = re.sub(r"[①-⓿❶-➓〇]", "", t)
+    t = re.sub(r"[■-◿•◦·∙･〈-】「-』〔〕［］]", "", t)      # 대시 통일
+    t = re.sub(r"\s+", "", t)   # 공백 완전제거 (PDF 추출 띄어쓰기 노이즈 대응 — 실측 75%->97%)
     return t.strip()
 
 

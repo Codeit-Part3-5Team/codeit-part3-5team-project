@@ -65,3 +65,4 @@ data_list*.xlsx
 # === 평가 산출물 (재생성 가능, 용량 관리) ===
 eval_cache/
 reports/*.tmp
+data/raw_llm_cache/

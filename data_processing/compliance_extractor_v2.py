@@ -12,20 +12,36 @@ from models import (
     LLMExtractionResponse, AuditChecklistItem, AuditEvidence, RunManifest,
 )
 from compliance_extractor import ChecklistGenerator, GOLDEN_COORDS, cid
+from openai import LengthFinishReasonError
 
 WINDOW_TOKEN_BUDGET = 16000
+WINDOW_CHUNK_SIZE = 8
 OVERLAP_CHUNKS = 1
 
 
 class ComplianceExtractorV2:
-    def __init__(self):
+    def __init__(self, max_workers=8):
         self._base = ChecklistGenerator()
+        self.max_workers = max_workers
 
     def assemble_document(self, doc_id):
         return self._base.assemble_document(doc_id)
 
     def build_windows(self, chunks):
-        return self._base.build_windows(chunks, budget=WINDOW_TOKEN_BUDGET, overlap=OVERLAP_CHUNKS)
+        # 청크 개수 기준 윈도우 (gpt-5-mini 속도/타임아웃 고려, 토큰 16k는 과대)
+        size = WINDOW_CHUNK_SIZE
+        ov = OVERLAP_CHUNKS
+        if len(chunks) <= size:
+            return [chunks]
+        windows = []
+        start = 0
+        while start < len(chunks):
+            end = min(start + size, len(chunks))
+            windows.append(chunks[start:end])
+            if end >= len(chunks):
+                break
+            start = end - ov  # overlap
+        return windows
 
     def build_prompt_v2(self, window, window_id):
         blocks = []
@@ -71,11 +87,15 @@ class ComplianceExtractorV2:
                     {"role": "user", "content": prompt["user"]},
                 ],
                 response_format=LLMExtractionResponse,
+                max_completion_tokens=16000,
+                reasoning_effort="low",
             )
             parsed = completion.choices[0].message.parsed
             if parsed is None:
                 return None, "parse_fail"
             return parsed, "ok"
+        except LengthFinishReasonError:
+            return None, "length_exceeded"
         except Exception as e:
             return None, "api_error:" + type(e).__name__
 
@@ -109,8 +129,22 @@ class ComplianceExtractorV2:
 
         all_items = []
         windows_failed = 0
-        for wi, w in enumerate(windows):
+
+        # LLM 호출만 병렬 (느린 부분), 결과는 window_id 순서대로 수집
+        def _extract(args):
+            wi, w = args
             resp, status = self.extract_window(w, wi, use_mock=use_mock, client=client)
+            return wi, w, resp, status
+
+        if use_mock:
+            results = [_extract((wi, w)) for wi, w in enumerate(windows)]
+        else:
+            from concurrent.futures import ThreadPoolExecutor
+            with ThreadPoolExecutor(max_workers=self.max_workers) as pool:
+                results = list(pool.map(_extract, list(enumerate(windows))))
+
+        # audit는 순차 (CPU 작업, 빠름) — window_id 순서 보존
+        for wi, w, resp, status in sorted(results, key=lambda x: x[0]):
             if resp is None:
                 windows_failed += 1
                 continue
