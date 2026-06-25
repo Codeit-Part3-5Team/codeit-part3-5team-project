@@ -1,0 +1,16 @@
+# 평가 전용 의존성 (R/G팀 EL)
+# 서비스 배포엔 불필요. 평가 실행 환경에서만 설치.
+# 설치: pip install -r requirements-eval.txt  (서비스 의존성까지 함께 설치됨)
+#
+# ⚠ bert-score가 transformers + torch를 끌어옵니다(수백MB).
+#   Windows는 PyPI 기본 torch가 CPU 빌드라 별도 설정 불필요.
+
+# 서비스 런타임 의존성 포함 (run_eval이 get_ai_response를 호출하므로 필요)
+-r requirements.txt
+
+# --- 생성 평가 (R/G EL) ---
+ragas
+rouge-score
+nltk
+bert-score
+scikit-learn

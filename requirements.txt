@@ -26,10 +26,7 @@ langchain-ollama
 pydantic
 
 # --- 평가 (Evaluation) ---
-ragas
-rouge-score
-bert-score
-scikit-learn
+# 평가 전용 의존성은 requirements-eval.txt로 분리 (torch 등 포함, 서비스 배포 불필요)
 
 # --- 서비스 (Service) ---
 fastapi
