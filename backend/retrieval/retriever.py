@@ -28,17 +28,18 @@ from rapidfuzz import fuzz, process
 
 from embedder import get_cached_embeddings
 
-# 모든 설정값은 config.yaml(팀 공용) + .env(개인)에서 옴 -> config.py가 통합 제공
+# ── 설정 ──────────────────────────────────────────────────────────────────────
+# 모든 설정값은 config.yaml(팀 공용) + .env(개인/비밀)에서 옴 → config.py가 통합 제공.
 from config import (
     FAISS_INDEX_PATH,
     CHUNKS_PATH,
     MMR_K,
     MMR_FETCH_K,
     MMR_LAMBDA,
-    FUZZY_THRESHOLD
+    FUZZY_THRESHOLD,
 )
 
-# agency 보조 별칭 사전
+# ── agency 보조 별칭 사전 ─────────────────────────────────────────────────────
 # 데이터의 agency_aliases로 못 잡는 약칭만 보조로 관리 (약칭 → 정규화 기관명)
 AGENCY_ALIASES: dict[str, str] = {
     "국연": "국민연금공단",
@@ -50,7 +51,7 @@ AGENCY_ALIASES: dict[str, str] = {
 }
 
 
-# 벡터스토어 빌드 / 로드
+# ── 벡터스토어 빌드 / 로드 ────────────────────────────────────────────────────
 
 def build_vectorstore(docs: list[Document]) -> FAISS:
     """
@@ -86,7 +87,7 @@ def load_vectorstore() -> FAISS:
     return vectorstore
 
 
-# 메타데이터 필터링
+# ── 메타데이터 필터링 ─────────────────────────────────────────────────────────
 
 def _build_alias_index(docs: list[Document]) -> dict[str, str]:
     """
@@ -154,15 +155,24 @@ def _filter_docs(
     docs: list[Document],
     agency: str | None = None,
     project_name: str | None = None,
+    budget_min: int | None = None,
+    budget_max: int | None = None,
+    date_field: str | None = None,
+    date_min: str | None = None,
+    date_max: str | None = None,
 ) -> list[Document]:
     """
-    Document 리스트를 agency_normalized / project_name 기준으로 필터링합니다.
-    agency는 3단계 매핑 로직 적용, project_name은 부분 문자열 매칭.
+    Document 리스트를 메타데이터 조건으로 필터링합니다.
 
     Args:
         docs        : 필터링할 Document 리스트
-        agency      : 기관명 필터 (없으면 미적용)
-        project_name: 사업명 필터 (없으면 미적용)
+        agency      : 기관명 필터 (3단계 매핑 적용)
+        project_name: 사업명 필터 (부분 문자열 매칭)
+        budget_min  : 예산 하한 (원 단위 정수, 없으면 미적용)
+        budget_max  : 예산 상한 (원 단위 정수, 없으면 미적용)
+        date_field  : 날짜 필터 기준 필드 (announcement_date | bid_start | bid_end)
+        date_min    : 날짜 하한 (YYYY-MM-DD, 없으면 미적용)
+        date_max    : 날짜 상한 (YYYY-MM-DD, 없으면 미적용)
 
     Returns:
         필터링된 Document 리스트
@@ -189,16 +199,56 @@ def _filter_docs(
         ]
         print(f"[retriever] project_name 필터: '{project_name}' → {len(filtered)}개")
 
+    if budget_min is not None or budget_max is not None:
+        before = len(filtered)
+        def _budget_ok(d: Document) -> bool:
+            raw = d.metadata.get("budget_amount")
+            if raw is None:
+                return False
+            try:
+                amount = int(raw)
+            except (ValueError, TypeError):
+                return False
+            if budget_min is not None and amount < budget_min:
+                return False
+            if budget_max is not None and amount > budget_max:
+                return False
+            return True
+        filtered = [d for d in filtered if _budget_ok(d)]
+        print(f"[retriever] budget 필터: min={budget_min} max={budget_max} → {before}개 → {len(filtered)}개")
+
+    if date_field and (date_min or date_max):
+        before = len(filtered)
+        def _date_ok(d: Document) -> bool:
+            raw = d.metadata.get(date_field)
+            if not raw:
+                return False
+            date_str = str(raw)[:10]   # YYYY-MM-DD 앞 10자만 비교
+            if date_min and date_str < date_min:
+                return False
+            if date_max and date_str > date_max:
+                return False
+            return True
+        filtered = [d for d in filtered if _date_ok(d)]
+        print(f"[retriever] date 필터: {date_field} [{date_min}, {date_max}] → {before}개 → {len(filtered)}개")
+
     return filtered
 
 
-# 메인 검색 함수
+# ── 메인 검색 함수 ────────────────────────────────────────────────────────────
 
 def get_retriever(
     query: str,
     vectorstore: FAISS,
     agency: str | None = None,
     project_name: str | None = None,
+    budget_min: int | None = None,
+    budget_max: int | None = None,
+    date_field: str | None = None,
+    date_min: str | None = None,
+    date_max: str | None = None,
+    sort_by: str | None = None,
+    sort_order: str | None = None,
     k: int = MMR_K,
     fetch_k: int = MMR_FETCH_K,
     lambda_mult: float = MMR_LAMBDA,
@@ -207,43 +257,83 @@ def get_retriever(
     메타데이터 필터링 + MMR 검색을 수행합니다.
 
     Args:
-        query       : 사용자 질문
-        vectorstore : FAISS 벡터스토어
-        agency      : 기관명 필터 (선택)
-        project_name: 사업명 필터 (선택)
-        k           : 최종 반환 문서 수
-        fetch_k     : MMR 후보 풀 크기
-        lambda_mult : MMR 관련성 가중치 (1=관련성만, 0=다양성만)
+        query        : 사용자 질문
+        vectorstore  : FAISS 벡터스토어
+        agency       : 기관명 필터 (선택)
+        project_name : 사업명 필터 (선택)
+        budget_min   : 예산 하한 (원 단위 정수, 선택)
+        budget_max   : 예산 상한 (원 단위 정수, 선택)
+        date_field   : 날짜 필터 기준 필드 (announcement_date | bid_start | bid_end, 선택)
+        date_min     : 날짜 하한 (YYYY-MM-DD, 선택)
+        date_max     : 날짜 상한 (YYYY-MM-DD, 선택)
+        sort_by      : 정렬 기준 필드 (budget_amount | announcement_date | bid_end, 선택)
+        sort_order   : 정렬 방향 (asc | desc, 선택)
+        k            : 최종 반환 문서 수
+        fetch_k      : MMR 후보 풀 크기
+        lambda_mult  : MMR 관련성 가중치 (1=관련성만, 0=다양성만)
 
     Returns:
         list[Document]: 검색된 문서 리스트
+                        (각 doc.metadata["score"]에 유사도 점수 포함)
+
+    Note:
+        score는 FAISS L2 거리를 유사도로 변환한 값입니다(0~1, **높을수록 유사**).
+        변환식: similarity = 1 / (1 + L2_distance)
     """
-    # MMR 후보 풀 검색
+    # MMR 후보 풀 검색 (score 포함 → score는 벡터로만 받을 수 있어 쿼리를 먼저 임베딩)
     query_vec = get_cached_embeddings().embed_query(query)
     docs_and_scores = vectorstore.max_marginal_relevance_search_with_score_by_vector(
         query_vec,
-        k = fetch_k,
-        fetch_k = fetch_k *2,
-        lambda_mult = lambda_mult
+        k=fetch_k,
+        fetch_k=fetch_k * 2,
+        lambda_mult=lambda_mult,
     )
 
-    # L2 거리 -> 유사도 (0~1, 높을수록 유사)로 변환해 각 청크 메타데이터에 부착
+    # L2 거리 → 유사도(0~1, 높을수록 유사)로 변환해 각 청크 메타데이터에 부착
     candidates: list[Document] = []
     for doc, distance in docs_and_scores:
         doc.metadata["score"] = 1.0 / (1.0 + float(distance))
         candidates.append(doc)
 
     # 메타데이터 필터링
-    if agency or project_name:
-        candidates = _filter_docs(candidates, agency=agency, project_name=project_name)
+    need_filter = any([agency, project_name,
+                       budget_min is not None, budget_max is not None,
+                       date_field and (date_min or date_max)])
+    if need_filter:
+        candidates = _filter_docs(
+            candidates,
+            agency=agency,
+            project_name=project_name,
+            budget_min=budget_min,
+            budget_max=budget_max,
+            date_field=date_field,
+            date_min=date_min,
+            date_max=date_max,
+        )
 
-    # 필터 후 k개 반환
+    # 정렬 (sort_by 지정 시 score 기반 MMR 순서 대신 메타데이터 기준으로 재정렬)
+    if sort_by and sort_order:
+        reverse = (sort_order == "desc")
+        is_date_field = sort_by in ("announcement_date", "bid_start", "bid_end")
+        def _sort_key(d: Document):
+            val = d.metadata.get(sort_by)
+            if is_date_field:
+                return str(val)[:10] if val is not None else ("" if reverse else "9999-99-99")
+            try:
+                return int(val) if val is not None else (float('-inf') if reverse else float('inf'))
+            except (ValueError, TypeError):
+                return float('-inf') if reverse else float('inf')
+
+        candidates = sorted(candidates, key=_sort_key, reverse=reverse)
+        print(f"[retriever] 정렬: {sort_by} {sort_order}")
+
+    # 필터/정렬 후 k개 반환
     results = candidates[:k]
     print(f"[retriever] 검색 완료: '{query}' → {len(results)}개 문서 반환")
     return results
 
 
-# 동작 확인
+# ── 동작 확인 ─────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     import sys
