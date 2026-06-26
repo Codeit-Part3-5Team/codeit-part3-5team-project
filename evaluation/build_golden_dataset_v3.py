@@ -97,6 +97,9 @@ def main():
                 answer = cur["answer"]
                 labels = cur.get("labels", labels)
                 source = "data_authored"
+                if cur.get("expected_items"):
+                    extra["expected_items"] = cur["expected_items"]
+                    extra["item_match_mode"] = cur.get("item_match_mode", "item")
         qid[0] += 1
         item = {
             "id": f"Q{qid[0]:03d}", "category": category, "question": question,
