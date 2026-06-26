@@ -105,6 +105,7 @@ def load_eval_samples_from_golden(
                 print(f"[meta] agency={agency!r}  project_name={project_name!r}")
 
         results = get_retriever(query, vs, agency=agency, project_name=project_name)
+
         samples.append(EvalSample(
             question=item["question"],
             answer="",
