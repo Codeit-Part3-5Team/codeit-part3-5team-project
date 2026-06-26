@@ -91,6 +91,9 @@ def load_eval_samples_from_golden(
 
         # 메타데이터 필터 추출
         agency, project_name = None, None
+        budget_min, budget_max = None, None
+        date_field, date_min, date_max = None, None, None
+        sort_by, sort_order = None, None
         category = item.get("category", "")
 
         meta_applicable = (
@@ -101,11 +104,34 @@ def load_eval_samples_from_golden(
             meta = extract_metadata(query)
             agency = meta["agency"]
             project_name = meta["project_name"] if not meta_agency_only else None
+            budget_min   = meta["budget_min"]
+            budget_max   = meta["budget_max"]
+            date_field   = meta["date_field"]
+            date_min     = meta["date_min"]
+            date_max     = meta["date_max"]
+            sort_by      = meta["sort_by"]
+            sort_order   = meta["sort_order"]
             if agency or project_name:
                 print(f"[meta] agency={agency!r}  project_name={project_name!r}")
+            if budget_min is not None or budget_max is not None:
+                print(f"[meta] budget min={budget_min} max={budget_max}")
+            if date_field and (date_min or date_max):
+                print(f"[meta] date {date_field} [{date_min}, {date_max}]")
+            if sort_by:
+                print(f"[meta] sort_by={sort_by} sort_order={sort_order}")
 
-        results = get_retriever(query, vs, agency=agency, project_name=project_name)
-
+        results = get_retriever(
+            query, vs,
+            agency=agency,
+            project_name=project_name,
+            budget_min=budget_min,
+            budget_max=budget_max,
+            date_field=date_field,
+            date_min=date_min,
+            date_max=date_max,
+            sort_by=sort_by,
+            sort_order=sort_order,
+        )
         samples.append(EvalSample(
             question=item["question"],
             answer="",
