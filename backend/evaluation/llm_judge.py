@@ -97,14 +97,16 @@ def _judge_one(sample: dict, max_retry: int = 2) -> dict:
             start = answer.find("{")
             end = answer.rfind("}")
             parsed = json.loads(answer[start:end + 1])
-            result = {k: int(parsed[k]) for k in keys}
+            result = {"id": sample.get("id")}              # 어느 문항(Q번호)인지 식별용
+            result.update({k: int(parsed[k]) for k in keys})
             result["reasoning"] = parsed.get("reasoning", "")
             result["is_refusal"] = _is_refusal(sample)
             return result
         except (json.JSONDecodeError, KeyError, ValueError):
             continue                                   # 파싱 실패 → 재시도
     # 끝내 실패하면 None 점수로 표시(집계에서 제외)
-    fail = {k: None for k in keys}
+    fail = {"id": sample.get("id")}                        # 식별용(파싱 실패 건도 어느 문항인지)
+    fail.update({k: None for k in keys})
     fail.update({"reasoning": "파싱 실패", "is_refusal": _is_refusal(sample)})
     return fail
 
