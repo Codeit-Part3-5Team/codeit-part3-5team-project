@@ -28,6 +28,7 @@ load_dotenv()
 
 from retriever import get_retriever, load_vectorstore
 from query_rewriter import rewrite_query
+from query_parser import extract_metadata
 
 
 # ──────────────────────────────────────────────
@@ -55,12 +56,17 @@ def load_eval_samples_from_golden(
     json_path: str,
     use_rewrite: bool = False,
     use_system_prompt: bool = True,
+    use_meta: bool = False,
+    meta_agency_only: bool = False,
+    meta_multi_only: bool = False,
 ) -> list[EvalSample]:
     """골든데이터셋 + retriever 결과로 EvalSample 리스트 생성.
 
     Args:
-        json_path   : 골든데이터셋 JSON 경로
-        use_rewrite : True면 followup 항목에 query rewriting 적용
+        json_path         : 골든데이터셋 JSON 경로
+        use_rewrite       : True면 followup 항목에 query rewriting 적용
+        use_system_prompt : query rewriting 시 시스템 프롬프트 사용 여부
+        use_meta          : True면 질문에서 agency/project_name 추출 후 필터 적용
     """
     with open(json_path, "r", encoding="utf-8") as f:
         golden = json.load(f)
@@ -83,7 +89,22 @@ def load_eval_samples_from_golden(
         else:
             query = question
 
-        results = get_retriever(query, vs)
+        # 메타데이터 필터 추출
+        agency, project_name = None, None
+        category = item.get("category", "")
+
+        meta_applicable = (
+            use_meta and
+            (not meta_multi_only or category == "multi_doc")
+        )
+        if meta_applicable:
+            meta = extract_metadata(query)
+            agency = meta["agency"]
+            project_name = meta["project_name"] if not meta_agency_only else None
+            if agency or project_name:
+                print(f"[meta] agency={agency!r}  project_name={project_name!r}")
+
+        results = get_retriever(query, vs, agency=agency, project_name=project_name)
         samples.append(EvalSample(
             question=item["question"],
             answer="",
@@ -276,12 +297,44 @@ if __name__ == "__main__":
                         help="followup 질문에 query rewriting 적용")
     parser.add_argument("--no-system-prompt", action="store_true",
                         help="query rewriting 시 시스템 프롬프트 미사용")
+    parser.add_argument("--meta", action="store_true",
+                        help="질문에서 agency/project_name 추출 후 메타 필터 적용")
+    parser.add_argument("--meta-agency-only", action="store_true",
+                        help="메타 필터 시 agency만 적용 (project_name 제외)")
+    parser.add_argument("--meta-multi-only", action="store_true",
+                        help="메타 필터를 multi_doc 카테고리에만 적용")
     args = parser.parse_args()
 
     use_sys = not args.no_system_prompt
-    print(f"\n▶ 골든셋: {args.golden}  |  rewrite: {'ON' if args.rewrite else 'OFF'}  |  system prompt: {'ON' if use_sys else 'OFF'}")
-    samples = load_eval_samples_from_golden(args.golden, use_rewrite=args.rewrite, use_system_prompt=use_sys)
+    meta_agency_only = args.meta_agency_only
+    meta_multi_only = args.meta_multi_only
 
-    label = f"query rewriting {'(system prompt OFF)' if not use_sys else ''}" if args.rewrite else "베이스라인"
+    print(
+        f"\n▶ 골든셋: {args.golden}"
+        f"  |  rewrite: {'ON' if args.rewrite else 'OFF'}"
+        f"  |  meta: {'ON' if args.meta else 'OFF'}"
+        + (f" [agency only]" if meta_agency_only else "")
+        + (f" [multi_doc only]" if meta_multi_only else "")
+    )
+    samples = load_eval_samples_from_golden(
+        args.golden,
+        use_rewrite=args.rewrite,
+        use_system_prompt=use_sys,
+        use_meta=args.meta,
+        meta_agency_only=meta_agency_only,
+        meta_multi_only=meta_multi_only,
+    )
+
+    flags = []
+    if args.rewrite:
+        flags.append(f"query rewriting{'(no sys prompt)' if not use_sys else ''}")
+    if args.meta:
+        meta_label = "meta filtering"
+        if meta_agency_only:
+            meta_label += " (agency only)"
+        if meta_multi_only:
+            meta_label += " (multi_doc only)"
+        flags.append(meta_label)
+    label = " + ".join(flags) if flags else "베이스라인"
     print(f"\n[ v3 {label} — 카테고리별 ]")
     evaluate_by_category(samples, k=args.k)
