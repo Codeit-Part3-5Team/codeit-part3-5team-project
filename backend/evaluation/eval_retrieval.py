@@ -120,10 +120,6 @@ def load_eval_samples_from_golden(
             if sort_by:
                 print(f"[meta] sort_by={sort_by} sort_order={sort_order}")
 
-<<<<<<< HEAD
-        results = get_retriever(query, vs, agency=agency, project_name=project_name)
-
-=======
         results = get_retriever(
             query, vs,
             agency=agency,
@@ -136,7 +132,6 @@ def load_eval_samples_from_golden(
             sort_by=sort_by,
             sort_order=sort_order,
         )
->>>>>>> 935a30c (feat: 메타데이터 필터 확장(budget/date/sort))
         samples.append(EvalSample(
             question=item["question"],
             answer="",
