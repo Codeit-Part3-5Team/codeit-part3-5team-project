@@ -9,8 +9,8 @@ paths:
 
 retriever:
   mmr_k: 5            # 최종 반환 청크 수
-  mmr_fetch_k: 20     # MMR 후보 풀 크기
-  mmr_lambda: 0.5     # 관련성 vs 다양성 (1=관련성만, 0=다양성만)
+  mmr_fetch_k: 100     # MMR 후보 풀 크기
+  mmr_lambda: 0.95     # 관련성 vs 다양성 (1=관련성만, 0=다양성만)
   fuzzy_threshold: 80 # agency 별칭 fuzzy 매칭 임계값 (0~100)
 
 embedding:
