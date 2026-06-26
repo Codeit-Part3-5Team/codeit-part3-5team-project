@@ -1,0 +1,21 @@
+# backend/evaluation 평가 전용 패키지
+# 설치: pip install -r backend/evaluation/requirements-eval.txt
+
+# 평가 core
+numpy
+python-dotenv
+openai
+
+# Retrieval 평가
+langchain
+langchain-openai
+langchain-community
+langchain-core
+faiss-cpu
+rapidfuzz
+
+# Reranking
+sentence-transformers
+
+# 임베딩
+tiktoken
