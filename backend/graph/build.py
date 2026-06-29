@@ -10,21 +10,17 @@ RFPilot 오케스트레이션 그래프 조립부.
   START → question_analysis → routing →(조건부) route_a/route_c
         → answer_generation → self_check → END
 """
+from dotenv import load_dotenv
+load_dotenv()   # .env의 OPENAI_API_KEY 등을 환경변수로 로드 (직접 실행 진입점이라 명시적으로 읽음)
+
 from langgraph.graph import StateGraph, START, END
 from backend.graph.state import GraphState
+# 2단계: 실제 노드 연결 (question_analysis, routing)
+from backend.graph.nodes.question_analysis import question_analysis_node
+from backend.graph.nodes.routing import routing_node
 
 
 # ===== 노드 스텁 (1단계: 흐름 확인용. 이후 실제 함수로 교체예정) =====
-
-def question_analysis_node(state: GraphState) -> dict:
-    # 이후 rewrite_query(+history 변환) 연결예정 — 지금은 원문 통과
-    return {"rewritten_question": state["question"]}
-
-
-def routing_node(state: GraphState) -> dict:
-    # 이후 룰 기반 의도 분류 연결예정 — 지금은 무조건 route_a
-    return {"route": "route_a"}
-
 
 def route_a_node(state: GraphState) -> dict:
     # 이후 retrieve(query, config) 연결예정
@@ -94,15 +90,21 @@ def build_graph():
     return g.compile()
 
 
-# 직접 실행 시 흐름 확인 (1단계 검증)
+# 직접 실행 시 흐름 확인
 # 실행: (루트에서) python -m backend.graph.build
 if __name__ == "__main__":
     app = build_graph()
+
+    # followup 테스트: "이 사업"이 앞 대화의 실제 사업명으로 풀리는지 확인
     result = app.invoke({
-        "question": "테스트 질문입니다",
-        "history": [],
+        "question": "그럼 이 사업 입찰 마감일은 언제야?",
+        "history": [
+            {"role": "user", "content": "한국수자원공사 건설통합시스템 고도화 사업 예산이 얼마야?"},
+            {"role": "assistant", "content": "5억원입니다"},
+        ],
         "config": {"top_k": 5},
     })
-    print("=== invoke 성공: 그래프가 끝까지 흘렀습니다 ===")
-    for k, v in result.items():
-        print(f"  {k}: {v}")
+    print("=== followup rewriting 테스트 ===")
+    print("원본 질문    :", result["question"])
+    print("재구성 질문  :", result["rewritten_question"])   # ← 여기가 핵심
+    print("route        :", result["route"])
