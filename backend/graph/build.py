@@ -18,14 +18,10 @@ from backend.graph.state import GraphState
 # 2단계: 실제 노드 연결 (question_analysis, routing)
 from backend.graph.nodes.question_analysis import question_analysis_node
 from backend.graph.nodes.routing import routing_node
-
+# 3단계: route_a 실제 연결 (retrieve)
+from backend.graph.nodes.route_a import route_a_node
 
 # ===== 노드 스텁 (1단계: 흐름 확인용. 이후 실제 함수로 교체예정) =====
-
-def route_a_node(state: GraphState) -> dict:
-    # 이후 retrieve(query, config) 연결예정
-    return {"docs": [], "route_status": "ok"}
-
 
 def route_c_node(state: GraphState) -> dict:
     # 이후 generate_checklist(doc_id) 연결예정
@@ -108,3 +104,4 @@ if __name__ == "__main__":
     print("원본 질문    :", result["question"])
     print("재구성 질문  :", result["rewritten_question"])   # ← 여기가 핵심
     print("route        :", result["route"])
+    print("docs 개수    :", len(result["docs"]))   # route_a가 검색한 청크 수
