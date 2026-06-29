@@ -252,6 +252,8 @@ def get_retriever(
     k: int = MMR_K,
     fetch_k: int = MMR_FETCH_K,
     lambda_mult: float = MMR_LAMBDA,
+    use_rerank: bool = False,
+    rerank_top_n: int = 20,
 ) -> list[Document]:
     """
     메타데이터 필터링 + MMR 검색을 수행합니다.
@@ -271,6 +273,8 @@ def get_retriever(
         k            : 최종 반환 문서 수
         fetch_k      : MMR 후보 풀 크기
         lambda_mult  : MMR 관련성 가중치 (1=관련성만, 0=다양성만)
+        use_rerank   : True면 cross-encoder로 재정렬 후 top-k 반환
+        rerank_top_n : reranking 입력 후보 수 (필터 후 상위 N개만 rerank)
 
     Returns:
         list[Document]: 검색된 문서 리스트
@@ -318,19 +322,26 @@ def get_retriever(
         def _sort_key(d: Document):
             val = d.metadata.get(sort_by)
             if is_date_field:
+                # None은 항상 끝으로 (asc: "9999", desc: "")
                 return str(val)[:10] if val is not None else ("" if reverse else "9999-99-99")
+            # 숫자 필드
             try:
                 return int(val) if val is not None else (float('-inf') if reverse else float('inf'))
             except (ValueError, TypeError):
                 return float('-inf') if reverse else float('inf')
-
         candidates = sorted(candidates, key=_sort_key, reverse=reverse)
         print(f"[retriever] 정렬: {sort_by} {sort_order}")
 
-    # 필터/정렬 후 k개 반환
-    results = candidates[:k]
-    print(f"[retriever] 검색 완료: '{query}' → {len(results)}개 문서 반환")
-    return results
+    # Reranking (cross-encoder)
+    if use_rerank and candidates:
+        from reranker import rerank
+        top_n = candidates[:rerank_top_n]
+        candidates = rerank(query, top_n, top_k=k)
+    else:
+        candidates = candidates[:k]
+
+    print(f"[retriever] 검색 완료: '{query}' → {len(candidates)}개 문서 반환")
+    return candidates
 
 
 # ── 동작 확인 ─────────────────────────────────────────────────────────────────
