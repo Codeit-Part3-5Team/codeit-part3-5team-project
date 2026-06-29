@@ -20,13 +20,11 @@ from backend.graph.nodes.question_analysis import question_analysis_node
 from backend.graph.nodes.routing import routing_node
 # 3단계: route_a 실제 연결 (retrieve)
 from backend.graph.nodes.route_a import route_a_node
+# 4단계: route_c 실제 연결 (generate_checklist)
+from backend.graph.nodes.route_c import route_c_node
+
 
 # ===== 노드 스텁 (1단계: 흐름 확인용. 이후 실제 함수로 교체예정) =====
-
-def route_c_node(state: GraphState) -> dict:
-    # 이후 generate_checklist(doc_id) 연결예정
-    return {"checklist_items": [], "route_status": "ok"}
-
 
 def answer_generation_node(state: GraphState) -> dict:
     # 이후 generate_answer / render_checklist 연결예정
@@ -91,7 +89,7 @@ def build_graph():
 if __name__ == "__main__":
     app = build_graph()
 
-    # followup 테스트: "이 사업"이 앞 대화의 실제 사업명으로 풀리는지 확인
+    # followup rewriting + route_a 검색까지 가볍게 확인 (route_c 실제 추출은 호출 안 함)
     result = app.invoke({
         "question": "그럼 이 사업 입찰 마감일은 언제야?",
         "history": [
@@ -100,8 +98,7 @@ if __name__ == "__main__":
         ],
         "config": {"top_k": 5},
     })
-    print("=== followup rewriting 테스트 ===")
     print("원본 질문    :", result["question"])
-    print("재구성 질문  :", result["rewritten_question"])   # ← 여기가 핵심
+    print("재구성 질문  :", result["rewritten_question"])
     print("route        :", result["route"])
-    print("docs 개수    :", len(result["docs"]))   # route_a가 검색한 청크 수
+    print("docs 개수    :", len(result.get("docs", [])))
