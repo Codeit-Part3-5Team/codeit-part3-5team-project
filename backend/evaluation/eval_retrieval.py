@@ -22,6 +22,7 @@ import json
 import time
 import argparse
 from dataclasses import dataclass, field
+from multi_query import multi_query_retrieve
 import numpy as np
 from dotenv import load_dotenv
 
@@ -61,6 +62,7 @@ def load_eval_samples_from_golden(
     meta_agency_only: bool = False,
     meta_multi_only: bool = False,
     use_rerank: bool = False,
+    use_multi_query: bool = False,
 ) -> list[EvalSample]:
     """골든데이터셋 + retriever 결과로 EvalSample 리스트 생성.
 
@@ -124,19 +126,26 @@ def load_eval_samples_from_golden(
                 print(f"[meta] sort_by={sort_by} sort_order={sort_order}")
 
         t_start = time.perf_counter()
-        results = get_retriever(
-            query, vs,
-            agency=agency,
-            project_name=project_name,
-            budget_min=budget_min,
-            budget_max=budget_max,
-            date_field=date_field,
-            date_min=date_min,
-            date_max=date_max,
-            sort_by=sort_by,
-            sort_order=sort_order,
-            use_rerank=use_rerank,
-        )
+        if use_multi_query and category == "multi_doc":
+            results = multi_query_retrieve(
+                query, vs,
+                agency=agency,
+                project_name=project_name,
+            )
+        else:
+            results = get_retriever(
+                query, vs,
+                agency=agency,
+                project_name=project_name,
+                budget_min=budget_min,
+                budget_max=budget_max,
+                date_field=date_field,
+                date_min=date_min,
+                date_max=date_max,
+                sort_by=sort_by,
+                sort_order=sort_order,
+                use_rerank=use_rerank,
+            )
         latencies.append(time.perf_counter() - t_start)
         samples.append(EvalSample(
             question=item["question"],
@@ -342,11 +351,14 @@ if __name__ == "__main__":
                         help="메타 필터를 multi_doc 카테고리에만 적용")
     parser.add_argument("--rerank", action="store_true",
                         help="cross-encoder로 검색 결과 재정렬")
+    parser.add_argument("--multi-query", action="store_true",
+                        help="multi_doc 카테고리에 Multi-Query Retrieval 적용")
     args = parser.parse_args()
 
     use_sys = not args.no_system_prompt
     meta_agency_only = args.meta_agency_only
     meta_multi_only = args.meta_multi_only
+    use_multi_query = args.multi_query
 
     print(
         f"\n▶ 골든셋: {args.golden}"
@@ -355,6 +367,7 @@ if __name__ == "__main__":
         + (f" [agency only]" if meta_agency_only else "")
         + (f" [multi_doc only]" if meta_multi_only else "")
         + (f"  |  rerank: ON" if args.rerank else "")
+        + (f"  |  multi-query: ON" if use_multi_query else "")
     )
     samples = load_eval_samples_from_golden(
         args.golden,
@@ -364,6 +377,7 @@ if __name__ == "__main__":
         meta_agency_only=meta_agency_only,
         meta_multi_only=meta_multi_only,
         use_rerank=args.rerank,
+        use_multi_query=use_multi_query,
     )
 
     flags = []
@@ -378,6 +392,8 @@ if __name__ == "__main__":
         flags.append(meta_label)
     if args.rerank:
         flags.append("reranking")
+    if use_multi_query:
+        flags.append("multi-query (multi_doc only)")
     label = " + ".join(flags) if flags else "베이스라인"
-    print(f"\n[ v3 {label} — 카테고리별 ]")
+    print(f"\n[ v4 {label} — 카테고리별 ]")
     evaluate_by_category(samples, k=args.k)
