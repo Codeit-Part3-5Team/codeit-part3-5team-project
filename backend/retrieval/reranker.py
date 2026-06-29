@@ -1,9 +1,9 @@
 """
 reranker.py
-Cross-encoder 기반 Reranker
+Flashrank 기반 Reranker (ONNX, PyTorch 불필요)
 
 MMR 검색 후보를 query-document 쌍 점수로 재정렬합니다.
-모델: cross-encoder/ms-marco-MiniLM-L-6-v2 (경량, 한국어 일부 지원)
+모델: ms-marco-MiniLM-L-12-v2 (flashrank 기본 모델)
 
 사용법:
     from reranker import rerank
@@ -15,17 +15,13 @@ MMR 검색 후보를 query-document 쌍 점수로 재정렬합니다.
 from functools import lru_cache
 from langchain_core.documents import Document
 
-# 모델은 최초 호출 시 한 번만 로드 (이후 캐시)
+
 @lru_cache(maxsize=1)
-def _load_model():
-    from sentence_transformers import CrossEncoder
-    model = CrossEncoder(
-        "cross-encoder/ms-marco-MiniLM-L-6-v2",
-        max_length=512,
-        device = "cpu",
-    )
-    print("[reranker] Cross-encoder 모델 로드 완료: ms-marco-MiniLM-L-6-v2")
-    return model
+def _load_ranker():
+    from flashrank import Ranker
+    ranker = Ranker()
+    print("[reranker] Flashrank 모델 로드 완료")
+    return ranker
 
 
 def rerank(
@@ -34,7 +30,7 @@ def rerank(
     top_k: int = 5,
 ) -> list[Document]:
     """
-    Cross-encoder로 문서를 재점수 매겨 상위 top_k개를 반환합니다.
+    Flashrank로 문서를 재점수 매겨 상위 top_k개를 반환합니다.
 
     Args:
         query : 사용자 질문
@@ -43,23 +39,30 @@ def rerank(
 
     Returns:
         재정렬된 상위 top_k개 Document 리스트
-        (각 doc.metadata["rerank_score"]에 cross-encoder 점수 포함)
+        (각 doc.metadata["rerank_score"]에 재정렬 점수 포함)
     """
     if not docs:
         return docs
 
-    model = _load_model()
+    from flashrank import RerankRequest
 
-    # (query, passage) 쌍 생성
-    pairs = [(query, doc.page_content) for doc in docs]
-    scores = model.predict(pairs)
+    ranker = _load_ranker()
 
-    # 점수 부착 후 내림차순 정렬
-    for doc, score in zip(docs, scores):
-        doc.metadata["rerank_score"] = float(score)
+    passages = [
+        {"id": i, "text": doc.page_content}
+        for i, doc in enumerate(docs)
+    ]
+    request = RerankRequest(query=query, passages=passages)
+    results = ranker.rerank(request)
 
-    reranked = sorted(docs, key=lambda d: d.metadata["rerank_score"], reverse=True)
-    result = reranked[:top_k]
+    # 점수 기준 내림차순 정렬 후 top_k 반환
+    scored = sorted(results, key=lambda r: r["score"], reverse=True)[:top_k]
 
-    print(f"[reranker] {len(docs)}개 → top {len(result)}개 재정렬 완료")
-    return result
+    reranked_docs = []
+    for r in scored:
+        doc = docs[r["id"]]
+        doc.metadata["rerank_score"] = float(r["score"])
+        reranked_docs.append(doc)
+
+    print(f"[reranker] {len(docs)}개 → top {len(reranked_docs)}개 재정렬 완료")
+    return reranked_docs
