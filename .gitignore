@@ -67,3 +67,11 @@ data_list*.xlsx
 eval_cache/
 reports/*.tmp
 data/raw_llm_cache/
+
+data/eval_cache/
+
+# 라우트C fixture (RFP 원문 인용 포함)
+evaluation/fixtures/eval_rubric_fixtures.json
+
+# 개인 백업 파일
+data_processing/build_chunks_backup.py
