@@ -15,23 +15,12 @@ load_dotenv()   # .env의 OPENAI_API_KEY 등을 환경변수로 로드 (직접 �
 
 from langgraph.graph import StateGraph, START, END
 from backend.graph.state import GraphState
-# 2단계: 실제 노드 연결 (question_analysis, routing)
 from backend.graph.nodes.question_analysis import question_analysis_node
 from backend.graph.nodes.routing import routing_node
-# 3단계: route_a 실제 연결 (retrieve)
 from backend.graph.nodes.route_a import route_a_node
-# 4단계: route_c 실제 연결 (generate_checklist)
 from backend.graph.nodes.route_c import route_c_node
-# 5단계: answer_generation 실제 연결 (generate_answer + render_checklist)
 from backend.graph.nodes.answer_generation import answer_generation_node
-
-
-# ===== 노드 스텁 (1단계: 흐름 확인용. 이후 실제 함수로 교체예정) =====
-
-def self_check_node(state: GraphState) -> dict:
-    # 이후 룰 게이트(출처 누락·PII 노출) 연결예정
-    return {"check_passed": True, "check_flags": []}
-
+from backend.graph.nodes.self_check import self_check_node
 
 # ===== 조건부 분기 선택자 =====
 
@@ -100,3 +89,4 @@ if __name__ == "__main__":
     print("route        :", result["route"])
     print("docs 개수    :", len(result.get("docs", [])))
     print("answer       :", result["answer"][:120])
+    print("check_passed :", result["check_passed"], "| flags:", result["check_flags"])
