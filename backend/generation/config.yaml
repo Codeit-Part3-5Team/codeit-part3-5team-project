@@ -24,7 +24,7 @@ memory:
 
 # 평가
 evaluation:
-  golden_dataset_path: "./data/golden/golden_dataset_v3.json"
+  golden_dataset_path: "./data/golden/golden_dataset_v4.json"
   sample_size: 63
   judge_model: "gpt-5-mini"
 
