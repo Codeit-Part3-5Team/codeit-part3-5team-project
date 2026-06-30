@@ -75,3 +75,4 @@ evaluation/fixtures/eval_rubric_fixtures.json
 
 # 개인 백업 파일
 data_processing/build_chunks_backup.py
+data/embed_cache/
