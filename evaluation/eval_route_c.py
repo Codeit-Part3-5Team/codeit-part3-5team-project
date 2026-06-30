@@ -43,7 +43,10 @@ RUBRIC_VERSION = "v1.0"
 MATCHER_MODEL = "gpt-5-mini"
 EVALUATION_SCOPE_VERSION = "v1.0"
 ACTOR_POLICY_VERSION = "v1.0"
-MATCHER_PROMPT_HASH = "TBD"  # matcher prompt 확정 후 채움
+# matcher prompt hash는 route_c_matcher에서 단일 출처로 가져온다
+# (양쪽에 따로 두면 Decision Pair Cache 키가 어긋난다)
+sys.path.insert(0, str(ROOT / "evaluation"))
+from route_c_matcher import call_matcher, MATCHER_PROMPT_HASH  # noqa: E402
 
 # ─────────────────────────────────────────────────────────────
 # 평가 데이터 계약 (Pydantic 대신 dataclass — 의존성 최소화)
@@ -305,7 +308,54 @@ def main():
             print(f"    items: {len(r['items'])}")
         return
     if "--evaluate" in args:
-        print("matcher 미구현 — fixture dry-run 통과 후 구현 예정")
+        # top-k 후보 선별 → matcher 판정 → Item Coverage/Precision
+        k = 8
+        filter_mode = "hard"   # hard | soft | none (q_subtype→category 필터)
+        do_dump = "--dump" in args
+        do_snapshot = "--snapshot" in args
+        for a in args:
+            if a.startswith("--k="):
+                k = int(a.split("=")[1])
+            if a.startswith("--filter="):
+                filter_mode = a.split("=")[1]
+        from route_c_evaluate import (evaluate_question, summarize,
+                                     dump_question, save_snapshot)
+        from embed_cache import EmbedCache
+        from openai import OpenAI
+        from dotenv import load_dotenv
+        load_dotenv()
+        client = OpenAI()
+        embed = EmbedCache(client=client)
+        dcache = DecisionPairCache()
+
+        qs = load_route_c_questions()
+        only = [a.split("=")[1] for a in args if a.startswith("--qid=")]
+        if only:
+            qs = [q for q in qs if q["id"] in only]
+        if not qs:
+            print("해당 문항 없음:", only)
+            return
+
+        scores = []
+        for q in qs:
+            ext = get_extraction(q["answer_doc_id"])
+            s = evaluate_question(q, ext, embed, dcache,
+                                  call_matcher, client, k=k,
+                                  filter_mode=filter_mode)
+            scores.append(s)
+            print(f"  {s.qid} [{s.category}/{s.filter_mode}] k={k} "
+                  f"cov={s.item_coverage:.2f} prec={s.item_precision:.2f} "
+                  f"denom={s.n_extracted}/{s.n_extracted_raw} "
+                  f"calls={s.matcher_calls} hits={s.matcher_cache_hits} "
+                  f"review={s.n_review_expected} "
+                  f"unresolved={s.n_unresolved_expected}")
+        if do_dump:
+            for s in scores:
+                dump_question(s)
+        print(f"\n요약: {summarize(scores)}")
+        print(f"임베딩 API 호출 텍스트 수: {embed.api_calls}")
+        if do_snapshot:
+            save_snapshot(scores, k=k)
         return
     # 기본: 로드 + 요약
     qs = load_route_c_questions()
