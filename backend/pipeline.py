@@ -167,6 +167,8 @@ def get_ai_response(query: str, history: list[dict] = None, config: dict = None,
         "retrieved_chunks": retrieved_chunks,
         "elapsed_sec": elapsed_sec,
         "tokens_used": tokens_used,
+        # self_check 결과(디버깅·평가용). 기존 5키는 그대로라 후방호환.
+        "check_flags": result.get("check_flags", []),
     }
 
 
