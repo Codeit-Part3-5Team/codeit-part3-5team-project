@@ -87,7 +87,7 @@ def main():
     r = burned_from_files(RAW_CACHE_DIR)
     e = burned_from_files(EVAL_CACHE_DIR)
     burned = g | r | e
-    print(f"\n[burned 집합 = 개발 사용 문서]")
+    print("\n[burned 집합 = 개발 사용 문서]")
     print(f"  GOLDEN_COORDS : {sorted(g)}")
     print(f"  raw_llm_cache : {sorted(r) if r else '(없음)'}")
     print(f"  eval_cache    : {sorted(e) if e else '(없음)'}")
@@ -106,14 +106,14 @@ def main():
 
     # 3) 교집합 판정
     overlap = burned & cand
-    print(f"\n[오염 검증 결과]")
+    print("\n[오염 검증 결과]")
     if overlap:
         print(f"  ✗ FAIL — 후보 중 개발 사용 문서 발견: {sorted(overlap)}")
-        print(f"  → 이 문서들은 burned이므로 V5 hold-out에서 제외해야 합니다.")
+        print("  → 이 문서들은 burned이므로 V5 hold-out에서 제외해야 합니다.")
         sys.exit(1)
     else:
-        print(f"  ✓ PASS — 후보 8건 모두 burned 집합과 겹치지 않음 (오염 없음)")
-        print(f"  → V5 blind 조건 충족: 개발에 안 쓴 새 문서로 확인됨")
+        print("  ✓ PASS — 후보 8건 모두 burned 집합과 겹치지 않음 (오염 없음)")
+        print("  → V5 blind 조건 충족: 개발에 안 쓴 새 문서로 확인됨")
 
     # 4) 후보 개수 점검 (설계상 8건이어야)
     if len(cand) != 8:
