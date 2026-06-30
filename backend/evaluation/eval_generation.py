@@ -52,6 +52,7 @@ def _build_judge(config: dict) -> tuple:
         judge_model,
         client=OpenAI(api_key=os.getenv("OPENAI_API_KEY")),
         max_tokens=4000,   # gpt-5 reasoning 토큰 포함, 출력 잘림 방지
+        reasoning_effort="low",     # reasoning 토큰 절감 → 채점 속도·비용 대폭 감소(17.6→8.5초, 점수 동일 검증)
     )
     judge_emb = LangchainEmbeddingsWrapper(OpenAIEmbeddings(model=embed_model))
     return judge_llm, judge_emb
