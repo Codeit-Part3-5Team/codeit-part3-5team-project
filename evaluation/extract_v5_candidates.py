@@ -24,7 +24,7 @@ load_dotenv()
 
 # eval_route_c의 get_extraction 재사용
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from eval_route_c import get_extraction, EXTRACT_CACHE_DIR
+from eval_route_c import get_extraction, EXTRACT_CACHE_DIR  # noqa: E402
 
 # V5 후보 8건 (오염검증 PASS, 가벼운 순서)
 V5_CANDIDATES = [

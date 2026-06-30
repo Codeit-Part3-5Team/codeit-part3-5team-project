@@ -1,4 +1,4 @@
-# evaluation/route_c_evaluate.py
+﻿# evaluation/route_c_evaluate.py
 # 라우트 C 평가 실행 — top-k 후보 선별 → matcher 판정 → Item Coverage/Precision
 #
 # 설계: route_c_eval_design.md §8 (채점 연계) + V5 설계 §8
@@ -178,7 +178,6 @@ def evaluate_question(
         expected_id = make_expected_id(qid, ei)
         cand_idx = top_k_candidates(evec, ext_vecs, k=k)
 
-        best_decision = "miss"      # 이 expected의 최종 상태
         had_match = False
         had_review = False
         best_sim = -1.0             # 이 expected에서 가장 가까웠던 후보 추적
@@ -305,7 +304,7 @@ def dump_question(score: QuestionScore):
             print(f"       사유     : {pv.reason}")
 
     if score.unresolved_best:
-        print(f"\n  -- 매칭 실패 expected의 best 후보 (문구 vs 추출누락 진단) --")
+        print("\n  -- 매칭 실패 expected의 best 후보 (문구 vs 추출누락 진단) --")
         for ub in score.unresolved_best:
             print(f"    [{ub['expected_id']}] best_sim={ub['best_sim']} "
                   f"dec={ub['best_decision']}")
@@ -439,7 +438,9 @@ if __name__ == "__main__":
                 "confidence": "high", "reason": "mock miss"}
 
     class MockEmbed2(EmbedCache):
-        def __init__(self): self.api_calls = 0; self._dirty = 0
+        def __init__(self):
+            self.api_calls = 0
+            self._dirty = 0
         def embed_many(self, texts):
             out = []
             for t in texts:
