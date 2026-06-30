@@ -36,3 +36,10 @@ class GraphState(TypedDict, total=False):
     # --- self_check_node 산출 ---
     check_passed: bool                  # 검증 통과 여부
     check_flags: list[str]              # 검증에서 걸린 항목(source_missing 등)
+
+    # --- grade_node 산출 (agentic 재검색 루프용) ---
+    grade: Literal["sufficient", "insufficient", "out_of_scope"]  # 검색결과 판정
+    #   sufficient    : 청크가 질문에 답하기 충분 → 생성으로
+    #   insufficient  : 부족하지만 재검색하면 나아질 여지 → re_retrieve 루프로
+    #   out_of_scope  : 범위 밖(거부 대상) → 재검색 말고 생성(거부)으로
+    retry_count: int                    # 재검색 시도 횟수(무한루프 방지, 최대 2회)
