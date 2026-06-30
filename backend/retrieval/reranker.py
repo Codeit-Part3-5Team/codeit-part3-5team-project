@@ -1,9 +1,9 @@
 """
 reranker.py
-Flashrank 기반 Reranker (ONNX, PyTorch 불필요)
+BGE Reranker 기반 Reranker (한국어 지원)
 
 MMR 검색 후보를 query-document 쌍 점수로 재정렬합니다.
-모델: ms-marco-MiniLM-L-12-v2 (flashrank 기본 모델)
+모델: BAAI/bge-reranker-large (한국어 포함 다국어 지원)
 
 사용법:
     from reranker import rerank
@@ -15,13 +15,15 @@ MMR 검색 후보를 query-document 쌍 점수로 재정렬합니다.
 from functools import lru_cache
 from langchain_core.documents import Document
 
+MODEL_NAME = "BAAI/bge-reranker-large"
+
 
 @lru_cache(maxsize=1)
 def _load_ranker():
-    from flashrank import Ranker
-    ranker = Ranker()
-    print("[reranker] Flashrank 모델 로드 완료")
-    return ranker
+    from sentence_transformers import CrossEncoder
+    model = CrossEncoder(MODEL_NAME)
+    print(f"[reranker] {MODEL_NAME} 모델 로드 완료")
+    return model
 
 
 def rerank(
@@ -30,7 +32,7 @@ def rerank(
     top_k: int = 5,
 ) -> list[Document]:
     """
-    Flashrank로 문서를 재점수 매겨 상위 top_k개를 반환합니다.
+    BGE CrossEncoder로 문서를 재점수 매겨 상위 top_k개를 반환합니다.
 
     Args:
         query : 사용자 질문
@@ -44,24 +46,17 @@ def rerank(
     if not docs:
         return docs
 
-    from flashrank import RerankRequest
+    model = _load_ranker()
 
-    ranker = _load_ranker()
+    pairs = [(query, doc.page_content) for doc in docs]
+    scores = model.predict(pairs)
 
-    passages = [
-        {"id": i, "text": doc.page_content}
-        for i, doc in enumerate(docs)
-    ]
-    request = RerankRequest(query=query, passages=passages)
-    results = ranker.rerank(request)
-
-    # 점수 기준 내림차순 정렬 후 top_k 반환
-    scored = sorted(results, key=lambda r: r["score"], reverse=True)[:top_k]
+    scored = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)[:top_k]
 
     reranked_docs = []
-    for r in scored:
-        doc = docs[r["id"]]
-        doc.metadata["rerank_score"] = float(r["score"])
+    for idx, score in scored:
+        doc = docs[idx]
+        doc.metadata["rerank_score"] = float(score)
         reranked_docs.append(doc)
 
     print(f"[reranker] {len(docs)}개 → top {len(reranked_docs)}개 재정렬 완료")

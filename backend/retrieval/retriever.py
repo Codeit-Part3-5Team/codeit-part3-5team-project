@@ -26,7 +26,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from rapidfuzz import fuzz, process
 
-from embedder import get_cached_embeddings
+from embedder_hf import get_cached_embeddings
 
 # ── 설정 ──────────────────────────────────────────────────────────────────────
 # 모든 설정값은 config.yaml(팀 공용) + .env(개인/비밀)에서 옴 → config.py가 통합 제공.
@@ -253,7 +253,7 @@ def get_retriever(
     fetch_k: int = MMR_FETCH_K,
     lambda_mult: float = MMR_LAMBDA,
     use_rerank: bool = False,
-    rerank_top_n: int = 20,
+    rerank_top_n: int = 100,
 ) -> list[Document]:
     """
     메타데이터 필터링 + MMR 검색을 수행합니다.
