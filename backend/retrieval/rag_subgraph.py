@@ -1,6 +1,6 @@
 """
 rag_subgraph.py
-LangGraph 기반 V1 Agentic RAG 서브그래프
+LangGraph 기반 Agentic RAG 서브그래프
 
 노드 흐름:
     rewrite → parse → retrieve → grade
@@ -31,6 +31,7 @@ State 필드:
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import TypedDict
 
 from langchain_core.documents import Document
@@ -110,9 +111,27 @@ def retrieve_node(state: RAGState) -> dict:
     meta = dict(state.get("metadata", {}))  # 복사 (원본 보존)
 
     if attempts > 0:
-        meta["agency"]       = None
-        meta["project_name"] = None
-        print(f"[retrieve] 재시도 {attempts}회 — agency/project 필터 해제")
+        prev_docs = state.get("documents", [])
+        if prev_docs:
+            # 1차 검색 결과 문서의 메타에서 가장 빈번한 agency/project_name 추출
+            agency_counter = Counter(
+                d.metadata["agency_normalized"]
+                for d in prev_docs
+                if d.metadata.get("agency_normalized")
+            )
+            project_counter = Counter(
+                d.metadata["project_name"]
+                for d in prev_docs
+                if d.metadata.get("project_name")
+            )
+            meta["agency"]       = agency_counter.most_common(1)[0][0] if agency_counter else None
+            meta["project_name"] = project_counter.most_common(1)[0][0] if project_counter else None
+            print(f"[retrieve] 재시도 {attempts}회 — prev_docs 메타 활용: "
+                  f"agency='{meta['agency']}' project='{meta['project_name']}'")
+        else:
+            meta["agency"]       = None
+            meta["project_name"] = None
+            print(f"[retrieve] 재시도 {attempts}회 — prev_docs 없음, 필터 해제")
 
     vs = _get_vectorstore()
     docs, agency_skipped = re_retrieve_fn(
