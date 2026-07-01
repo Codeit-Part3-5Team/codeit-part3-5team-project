@@ -101,33 +101,54 @@ def retrieve(query: str, config: dict) -> list[Document]:
         return get_retriever(query, vs, k=top_k)
 
 
+# LangGraph 앱 캐싱 — 첫 호출 때 1회 컴파일 후 재사용.
+# (지연 import: pipeline ← build ← route_a ← pipeline 순환참조를 함수 호출 시점으로 미룸)
+_graph_app = None
+
+def _get_graph_app():
+    """LangGraph 앱을 1회 컴파일해 캐싱한다(지연 import로 순환참조 회피)."""
+    global _graph_app
+    if _graph_app is None:
+        from backend.graph.build import build_graph
+        _graph_app = build_graph()
+    return _graph_app
+
+
 # use_ollama: True면 시나리오 A(Ollama), False면 B(gpt). 평가에서 모델 비교용
 def get_ai_response(query: str, history: list[dict] = None, config: dict = None,
-                    max_history: int = None, use_ollama: bool = False) -> dict:
+                    max_history: int = None, use_ollama: bool = False,
+                    selected_doc_id: str = None) -> dict:
+    """
+    외부 진입점(서비스·평가 공통). 내부 처리는 LangGraph 오케스트레이션으로 위임한다(옵션A).
+    외부 시그니처와 반환 dict(answer/sources/retrieved_chunks/elapsed_sec/tokens_used)는
+    기존 그대로 유지하여 프론트엔드·평가 코드에 영향을 주지 않는다.
+
+    검색·생성·라우팅·검증은 모두 그래프 노드가 수행한다.
+    selected_doc_id: 라우트 C(체크리스트)용. 미지정(None) 시 route_a 위주 호출엔 영향 없음.
+    """
     start = time.time()
     history = history or []
     config = config or load_config()   # config 없으면 config.yaml에서 로드
 
-    # 1) 대화 이력 자르기
-    #    우선순위: 프론트가 보낸 max_history > config 값 > 기본 10
+    # 대화 이력 자르기 (우선순위: 인자 max_history > config 값 > 기본 10)
     if max_history is None:
         max_history = config.get("max_history", 10)
     trimmed_history = trim_history(history, max_history)
 
-    # 2) 검색 (지금은 mock, 이후 retriever로 교체)
-    #    config로 naive/agentic 분기는 추후 추가 예정 (지금은 자리만)
-    docs = retrieve(query, config)     # retriever_type에 따라 분기
+    # 그래프 실행 — 질문분석(rewriting)·라우팅·검색/추출·생성·검증을 노드가 처리
+    app = _get_graph_app()
+    result = app.invoke({
+        "question": query,
+        "history": trimmed_history,
+        "selected_doc_id": selected_doc_id,
+        "config": config,
+        "use_ollama": use_ollama,
+    })
 
-    # 3) 답변 생성 — use_ollama로 시나리오 A/B 선택, Ollama 모델은 config에서 읽음
-    ollama_model = config.get("ollama_model", "llama3.2")
-    # 프롬프트 버전도 config에서 읽어 주입 (평가 시 v1/v2 전환용, 기본 v2)
-    prompt_version = config.get("prompt_version", "system_v2")
-    answer, tokens_used = generate_answer(query, docs, trimmed_history,
-                                          use_ollama=use_ollama, ollama_model=ollama_model,
-                                          prompt_version=prompt_version)
-    
-    # 출처는 file_name + section으로 표기 (page는 hwp라 null이므로 미사용)
-    # doc_id는 화면 표기엔 안 쓰지만 추적/디버깅용으로 함께 보관
+    # 그래프 결과 → 기존 반환 형식으로 변환 (결정2: docs를 여기서 str/dict로 분해)
+    answer = result.get("answer", "")
+    tokens_used = result.get("tokens_used", 0)
+    docs = result.get("docs", [])              # route_a 검색결과(route_c면 빈 리스트)
     sources = [
         {
             "doc_id": d.metadata.get("doc_id"),
@@ -146,6 +167,8 @@ def get_ai_response(query: str, history: list[dict] = None, config: dict = None,
         "retrieved_chunks": retrieved_chunks,
         "elapsed_sec": elapsed_sec,
         "tokens_used": tokens_used,
+        # self_check 결과(디버깅·평가용). 기존 5키는 그대로라 후방호환.
+        "check_flags": result.get("check_flags", []),
     }
 
 
