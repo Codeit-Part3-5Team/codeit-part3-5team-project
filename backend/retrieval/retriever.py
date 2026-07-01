@@ -420,6 +420,45 @@ def re_retrieve_fn(
     return docs, False
 
 
+# ── recall 확대 재검색 ────────────────────────────────────────────────────────
+
+def re_retrieve_recall_fn(
+    query: str,
+    vectorstore: FAISS,
+    k: int = MMR_K,
+    fetch_k: int = MMR_FETCH_K,
+    recall_lambda_mult: float = 0.7,
+) -> list[Document]:
+    """
+    recall 확대 방향의 재검색 함수.
+
+    1차 검색이 부실할 때(grade="retry") 사용하며,
+    좁히는 대신 아래 두 가지로 더 넓게 회수합니다:
+        1. 모든 메타데이터 필터 해제 (agency, project_name 등)
+        2. MMR lambda를 낮춰 다양성 강화 (기본 0.95 → 0.7)
+
+    Args:
+        query             : 검색 쿼리
+        vectorstore       : FAISS 벡터스토어
+        k                 : 최종 반환 문서 수
+        fetch_k           : MMR 후보 풀 크기
+        recall_lambda_mult: MMR 다양성 가중치 (낮을수록 다양성 강화)
+
+    Returns:
+        list[Document]: 필터 해제 + 다양성 강화 검색 결과
+    """
+    print(f"[retriever] recall 확대 재검색 — 필터 해제 / lambda={recall_lambda_mult}")
+    return get_retriever(
+        query=query,
+        vectorstore=vectorstore,
+        agency=None,
+        project_name=None,
+        k=k,
+        fetch_k=fetch_k,
+        lambda_mult=recall_lambda_mult,
+    )
+
+
 # ── 동작 확인 ─────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
