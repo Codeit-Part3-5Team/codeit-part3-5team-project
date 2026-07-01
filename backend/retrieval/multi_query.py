@@ -15,14 +15,11 @@ import json
 from openai import OpenAI
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
+from dotenv import load_dotenv
 
-_client: OpenAI | None = None
+load_dotenv()
 
-def _get_client() -> OpenAI:
-    global _client
-    if _client is None:
-        _client = OpenAI()
-    return _client
+client = OpenAI()
 
 _SYSTEM_PROMPT = """\
 당신은 공공 입찰 RFP 검색 시스템의 쿼리 확장기입니다.
@@ -50,7 +47,7 @@ def generate_queries(question: str, n_queries: int = 3) -> list[str]:
     prompt = _SYSTEM_PROMPT.format(n=n_queries)
     user_content = f"질문: {question}"
 
-    response = _get_client().chat.completions.create(
+    response = client.chat.completions.create(
         model="gpt-5-nano",
         messages=[
             {"role": "system", "content": prompt},
@@ -81,6 +78,42 @@ def generate_queries(question: str, n_queries: int = 3) -> list[str]:
         return [question]
 
 
+def _rrf_merge(
+    ranked_lists: list[list[Document]],
+    k: int = 5,
+    rrf_k: int = 60,
+) -> list[Document]:
+    """
+    Reciprocal Rank Fusion으로 여러 ranked list를 합산합니다.
+
+    Args:
+        ranked_lists : 각 쿼리의 검색 결과 리스트 (순위 있음)
+        k            : 최종 반환 문서 수
+        rrf_k        : RRF 상수 (기본값 60)
+
+    Returns:
+        RRF 점수 기준 상위 k개 Document 리스트
+    """
+    rrf_scores: dict[str, float] = {}
+    doc_map: dict[str, Document] = {}
+
+    for ranked in ranked_lists:
+        for rank, doc in enumerate(ranked, start=1):
+            doc_id = doc.metadata.get("doc_id", "")
+            if not doc_id:
+                continue
+            rrf_scores[doc_id] = rrf_scores.get(doc_id, 0.0) + 1.0 / (rrf_k + rank)
+            doc_map[doc_id] = doc
+
+    sorted_ids = sorted(rrf_scores, key=lambda d: rrf_scores[d], reverse=True)[:k]
+    results = []
+    for doc_id in sorted_ids:
+        doc = doc_map[doc_id]
+        doc.metadata["rrf_score"] = rrf_scores[doc_id]
+        results.append(doc)
+    return results
+
+
 def multi_query_retrieve(
     query: str,
     vectorstore: FAISS,
@@ -92,7 +125,7 @@ def multi_query_retrieve(
     lambda_mult: float = 0.95,
 ) -> list[Document]:
     """
-    Multi-Query Retrieval: 여러 쿼리로 검색 후 결과 합산.
+    Multi-Query Retrieval: 여러 쿼리로 검색 후 RRF로 합산.
 
     Args:
         query        : 원래 사용자 질문
@@ -105,16 +138,13 @@ def multi_query_retrieve(
         lambda_mult  : MMR 관련성 가중치
 
     Returns:
-        중복 제거 후 상위 k개 Document 리스트
+        RRF 합산 후 상위 k개 Document 리스트
     """
     from retriever import get_retriever
 
     queries = generate_queries(query, n_queries=n_queries)
 
-    # 각 쿼리로 검색 (fetch_k만큼 넉넉히)
-    seen_doc_ids: set[str] = set()
-    all_candidates: list[Document] = []
-
+    ranked_lists = []
     for q in queries:
         results = get_retriever(
             q, vectorstore,
@@ -124,14 +154,8 @@ def multi_query_retrieve(
             fetch_k=fetch_k,
             lambda_mult=lambda_mult,
         )
-        for doc in results:
-            doc_id = doc.metadata.get("doc_id", "")
-            if doc_id not in seen_doc_ids:
-                seen_doc_ids.add(doc_id)
-                all_candidates.append(doc)
+        ranked_lists.append(results)
 
-    # score 기준 내림차순 정렬 후 top-k
-    all_candidates.sort(key=lambda d: d.metadata.get("score", 0.0), reverse=True)
-    results = all_candidates[:k]
-    print(f"[multi_query] 총 {len(all_candidates)}개 후보 → top {len(results)}개 반환")
-    return results
+    merged = _rrf_merge(ranked_lists, k=k)
+    print(f"[multi_query] {len(queries)}개 쿼리 RRF 합산 → top {len(merged)}개 반환")
+    return merged

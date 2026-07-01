@@ -26,7 +26,8 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from rapidfuzz import fuzz, process
 
-from embedder_hf import get_cached_embeddings
+from embedder import get_cached_embeddings
+from reranker import rerank
 
 # ── 설정 ──────────────────────────────────────────────────────────────────────
 # 모든 설정값은 config.yaml(팀 공용) + .env(개인/비밀)에서 옴 → config.py가 통합 제공.
@@ -334,7 +335,6 @@ def get_retriever(
 
     # Reranking (cross-encoder)
     if use_rerank and candidates:
-        from reranker import rerank
         top_n = candidates[:rerank_top_n]
         candidates = rerank(query, top_n, top_k=k)
     else:
@@ -342,6 +342,82 @@ def get_retriever(
 
     print(f"[retriever] 검색 완료: '{query}' → {len(candidates)}개 문서 반환")
     return candidates
+
+
+# ── agency 필터 스킵 재검색 ───────────────────────────────────────────────────
+
+def re_retrieve_fn(
+    query: str,
+    vectorstore: FAISS,
+    agency: str | None = None,
+    project_name: str | None = None,
+    budget_min: int | None = None,
+    budget_max: int | None = None,
+    date_field: str | None = None,
+    date_min: str | None = None,
+    date_max: str | None = None,
+    sort_by: str | None = None,
+    sort_order: str | None = None,
+    k: int = MMR_K,
+    fetch_k: int = MMR_FETCH_K,
+    lambda_mult: float = MMR_LAMBDA,
+    use_rerank: bool = False,
+    rerank_top_n: int = 100,
+) -> tuple[list[Document], bool]:
+    """
+    agency 필터로 검색 후 결과가 없으면 agency 필터를 스킵하고 재검색합니다.
+
+    agency가 지정됐으나 결과가 0개인 경우(인덱스에 해당 기관 청크 없음 등)
+    agency=None으로 재검색해 빈 결과를 방지합니다.
+
+    Args:
+        query        : 검색 쿼리
+        vectorstore  : FAISS 벡터스토어
+        agency       : 기관명 필터 (선택)
+        project_name : 사업명 필터 (선택)
+        budget_min   : 예산 하한 (선택)
+        budget_max   : 예산 상한 (선택)
+        date_field   : 날짜 필터 기준 필드 (선택)
+        date_min     : 날짜 하한 YYYY-MM-DD (선택)
+        date_max     : 날짜 상한 YYYY-MM-DD (선택)
+        sort_by      : 정렬 기준 필드 (선택)
+        sort_order   : 정렬 방향 asc|desc (선택)
+        k            : 최종 반환 문서 수
+        fetch_k      : MMR 후보 풀 크기
+        lambda_mult  : MMR 관련성 가중치
+        use_rerank   : cross-encoder 재정렬 여부
+        rerank_top_n : reranking 입력 후보 수
+
+    Returns:
+        (docs, agency_skipped)
+            docs           : 검색된 Document 리스트
+            agency_skipped : agency 필터를 스킵하고 재검색했으면 True
+    """
+    common_kwargs = dict(
+        project_name=project_name,
+        budget_min=budget_min,
+        budget_max=budget_max,
+        date_field=date_field,
+        date_min=date_min,
+        date_max=date_max,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        k=k,
+        fetch_k=fetch_k,
+        lambda_mult=lambda_mult,
+        use_rerank=use_rerank,
+        rerank_top_n=rerank_top_n,
+    )
+
+    docs = get_retriever(query, vectorstore, agency=agency, **common_kwargs)
+
+    # agency 필터로 결과가 없으면 자동 스킵 후 재검색
+    if not docs and agency:
+        print(f"[retriever] agency='{agency}' 결과 없음 → agency 필터 스킵 재검색")
+        docs = get_retriever(query, vectorstore, agency=None, **common_kwargs)
+        return docs, True
+
+    return docs, False
 
 
 # ── 동작 확인 ─────────────────────────────────────────────────────────────────
