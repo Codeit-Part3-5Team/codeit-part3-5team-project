@@ -47,6 +47,22 @@ def _docs_to_text(docs: list, max_chars: int = 2000) -> str:
     return text[:max_chars]
 
 
+# 집계형(열거·개수·최상위) 질문의 언어 신호. 이런 질문은 넓은 문서 범위가 필요하다.
+_AGGREGATION_KEYWORDS = ("모두", "모든", "전부", "전체", "가장", "몇 건", "몇건", "목록", "리스트")
+
+
+def _is_aggregation_query(question: str) -> bool:
+    """질문이 여러 문서를 훑어야 하는 집계형인지 키워드로 판별한다.
+
+    Args:
+        question: 사용자 질문(재구성 질문 우선).
+    Returns:
+        bool: 집계형이면 True.
+    """
+    return any(kw in question for kw in _AGGREGATION_KEYWORDS)
+
+
+
 def grade_node(state) -> dict:
     """
     검색결과(docs)가 질문에 충분한지 LLM으로 판정하고, 재시도 횟수를 증가시킨다.
@@ -82,6 +98,12 @@ def grade_node(state) -> dict:
         if grade not in ("sufficient", "insufficient", "out_of_scope"):
             grade = "sufficient"
     except (json.JSONDecodeError, AttributeError):
+        grade = "sufficient"
+
+    # 집계형 질문(열거·개수·최상위)은 넓은 문서 범위가 필요한데, 재검색은 문서를 좁혀
+    # 정답 문서를 밀어내 오히려 정답 정확도를 낮춘다. 이 경우 insufficient여도 재검색을
+    # 억제하도록 sufficient로 본다. out_of_scope(거부)는 그대로 유지한다.
+    if grade == "insufficient" and _is_aggregation_query(question):
         grade = "sufficient"
 
     return {"grade": grade, "retry_count": retry_count}
