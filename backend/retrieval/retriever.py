@@ -344,6 +344,121 @@ def get_retriever(
     return candidates
 
 
+# ── agency 필터 스킵 재검색 ───────────────────────────────────────────────────
+
+def re_retrieve_fn(
+    query: str,
+    vectorstore: FAISS,
+    agency: str | None = None,
+    project_name: str | None = None,
+    budget_min: int | None = None,
+    budget_max: int | None = None,
+    date_field: str | None = None,
+    date_min: str | None = None,
+    date_max: str | None = None,
+    sort_by: str | None = None,
+    sort_order: str | None = None,
+    k: int = MMR_K,
+    fetch_k: int = MMR_FETCH_K,
+    lambda_mult: float = MMR_LAMBDA,
+    use_rerank: bool = False,
+    rerank_top_n: int = 100,
+) -> tuple[list[Document], bool]:
+    """
+    agency 필터로 검색 후 결과가 없으면 agency 필터를 스킵하고 재검색합니다.
+
+    agency가 지정됐으나 결과가 0개인 경우(인덱스에 해당 기관 청크 없음 등)
+    agency=None으로 재검색해 빈 결과를 방지합니다.
+
+    Args:
+        query        : 검색 쿼리
+        vectorstore  : FAISS 벡터스토어
+        agency       : 기관명 필터 (선택)
+        project_name : 사업명 필터 (선택)
+        budget_min   : 예산 하한 (선택)
+        budget_max   : 예산 상한 (선택)
+        date_field   : 날짜 필터 기준 필드 (선택)
+        date_min     : 날짜 하한 YYYY-MM-DD (선택)
+        date_max     : 날짜 상한 YYYY-MM-DD (선택)
+        sort_by      : 정렬 기준 필드 (선택)
+        sort_order   : 정렬 방향 asc|desc (선택)
+        k            : 최종 반환 문서 수
+        fetch_k      : MMR 후보 풀 크기
+        lambda_mult  : MMR 관련성 가중치
+        use_rerank   : cross-encoder 재정렬 여부
+        rerank_top_n : reranking 입력 후보 수
+
+    Returns:
+        (docs, agency_skipped)
+            docs           : 검색된 Document 리스트
+            agency_skipped : agency 필터를 스킵하고 재검색했으면 True
+    """
+    common_kwargs = dict(
+        project_name=project_name,
+        budget_min=budget_min,
+        budget_max=budget_max,
+        date_field=date_field,
+        date_min=date_min,
+        date_max=date_max,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        k=k,
+        fetch_k=fetch_k,
+        lambda_mult=lambda_mult,
+        use_rerank=use_rerank,
+        rerank_top_n=rerank_top_n,
+    )
+
+    docs = get_retriever(query, vectorstore, agency=agency, **common_kwargs)
+
+    # agency 필터로 결과가 없으면 자동 스킵 후 재검색
+    if not docs and agency:
+        print(f"[retriever] agency='{agency}' 결과 없음 → agency 필터 스킵 재검색")
+        docs = get_retriever(query, vectorstore, agency=None, **common_kwargs)
+        return docs, True
+
+    return docs, False
+
+
+# ── recall 확대 재검색 ────────────────────────────────────────────────────────
+
+def re_retrieve_recall_fn(
+    query: str,
+    vectorstore: FAISS,
+    k: int = MMR_K,
+    fetch_k: int = MMR_FETCH_K,
+    recall_lambda_mult: float = 0.7,
+) -> list[Document]:
+    """
+    recall 확대 방향의 재검색 함수.
+
+    1차 검색이 부실할 때(grade="retry") 사용하며,
+    좁히는 대신 아래 두 가지로 더 넓게 회수합니다:
+        1. 모든 메타데이터 필터 해제 (agency, project_name 등)
+        2. MMR lambda를 낮춰 다양성 강화 (기본 0.95 → 0.7)
+
+    Args:
+        query             : 검색 쿼리
+        vectorstore       : FAISS 벡터스토어
+        k                 : 최종 반환 문서 수
+        fetch_k           : MMR 후보 풀 크기
+        recall_lambda_mult: MMR 다양성 가중치 (낮을수록 다양성 강화)
+
+    Returns:
+        list[Document]: 필터 해제 + 다양성 강화 검색 결과
+    """
+    print(f"[retriever] recall 확대 재검색 — 필터 해제 / lambda={recall_lambda_mult}")
+    return get_retriever(
+        query=query,
+        vectorstore=vectorstore,
+        agency=None,
+        project_name=None,
+        k=k,
+        fetch_k=fetch_k,
+        lambda_mult=recall_lambda_mult,
+    )
+
+
 # ── 동작 확인 ─────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
