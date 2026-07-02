@@ -304,8 +304,10 @@ def main():
     gen_model = gen_meta.get("ollama_model") or "gpt-5-mini"
     model_tag = re.sub(r"[^0-9A-Za-z._-]", "-", gen_model)   # 파일명 안전화(콜론 등 → 하이픈)
     # 재검색 전략(precision/recall)을 파일명에 반영해 case별 결과가 덮어써지지 않게 함
-    strategy = gen_meta.get("re_retrieve_strategy")           # 생성 메타에 있으면 사용
-    strategy_tag = f"_{strategy}" if strategy else ""         # 없으면(naive 등) 태그 없음
+    # 재검색 전략은 agentic_rag일 때만 파일명에 반영(naive는 meta에 잔여 strategy가 있어도 무시).
+    retriever_type = gen_meta.get("retriever_type")
+    strategy = gen_meta.get("re_retrieve_strategy") if retriever_type == "agentic_rag" else None
+    strategy_tag = f"_{strategy}" if strategy else ""
     metrics = {
         "evaluated_at": datetime.now().isoformat(timespec="seconds"),
         "prompt_version": prompt_version,

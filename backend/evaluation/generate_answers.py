@@ -164,10 +164,11 @@ def main():
         tag = f"{prompt_version}_ollama_{model_tag}"
     else:
         tag = prompt_version
-    # 재검색 전략(precision/recall)이 config에 있으면 파일명 태그에 반영(case별 분리 저장)
-    strategy = config.get("re_retrieve_strategy")
-    if strategy:
-        tag = f"{tag}_{strategy}"
+    # 재검색 전략은 agentic_rag일 때만 파일명 태그에 반영(naive_rag는 재검색이 없어 전략 무의미).
+    if config.get("retriever_type") == "agentic_rag":
+        strategy = config.get("re_retrieve_strategy")
+        if strategy:
+            tag = f"{tag}_{strategy}"
     samples_path = RESULTS_DIR / f"samples_{tag}.json"
 
     # 생성 메타도 함께 저장(보고서 기록·토큰 추적용)
