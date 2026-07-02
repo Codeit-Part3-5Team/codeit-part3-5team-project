@@ -50,6 +50,22 @@ def _grade_selector(state: GraphState) -> str:
     return "answer_generation"
 
 
+def _mode_selector(state: GraphState) -> str:
+    """
+    retriever_type으로 route_a 다음 행선지를 정한다(naive/agentic 토글).
+      - agentic_rag → grade(재검색 루프 수행)
+      - naive_rag(기본) → grade 건너뛰고 바로 answer_generation
+    config는 state로 주입된다(그래프 컴파일은 인자 없이 하므로 state에서 읽음).
+    """
+    config = state.get("config", {})
+    if config.get("retriever_type") == "agentic_rag":
+        return "grade"
+    return "answer_generation"
+
+
+# ===== 그래프 조립 =====
+
+
 # ===== 그래프 조립 =====
 
 def build_graph():
@@ -82,9 +98,13 @@ def build_graph():
         {"route_a": "route_a", "route_c": "route_c"},
     )
 
-    # route_a(검색) → grade(검색결과 평가). route_c는 추출이라 grade 거치지 않음.
-    g.add_edge("route_a", "grade")
-
+    # route_a(검색) 다음: retriever_type에 따라 분기(naive/agentic 토글).
+    #   agentic_rag → grade(재검색 루프)로. naive_rag → grade 건너뛰고 바로 생성.
+    g.add_conditional_edges(
+        "route_a",
+        _mode_selector,
+        {"grade": "grade", "answer_generation": "answer_generation"},
+    )
     # grade 판정으로 분기: 부실하고 재시도 여유 있으면 재검색 루프, 아니면 생성
     g.add_conditional_edges(
         "grade",

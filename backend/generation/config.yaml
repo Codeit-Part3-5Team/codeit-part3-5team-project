@@ -1,5 +1,6 @@
 # RAG 파이프라인
-retriever_type: "naive_rag"  # naive_rag / agentic_rag
+retriever_type: "agentic_rag"  # naive_rag / agentic_rag
+re_retrieve_strategy: "precision"
 top_k: 5
 
 # 생성 모델
