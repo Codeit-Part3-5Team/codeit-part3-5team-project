@@ -19,11 +19,20 @@ from backend.generation.llm_client import call_gpt   # 기존 gpt-5-mini 호출 
 # grade 전용 판정 프롬프트. JSON 한 줄만 출력하도록 강제(파싱 안정성).
 _GRADE_SYSTEM = """너는 RFP(제안요청서) 질의응답 시스템의 검색결과 평가자다.
 사용자 질문과 검색된 문서 청크를 보고, 이 청크들로 질문에 답할 수 있는지 판정하라.
+주의: 청크가 검색되었더라도, 질문 자체가 답변 대상이 아니면 out_of_scope다. 청크 유무보다 질문의 성격을 먼저 보라.
 
 판정값은 다음 셋 중 하나다:
 - "sufficient"   : 청크 안에 질문의 답이 될 근거가 있다.
-- "insufficient" : 질문은 RFP에서 답할 수 있는 종류인데, 청크에 근거가 부족하거나 무관하다(재검색하면 나아질 수 있음).
-- "out_of_scope" : 질문 자체가 RFP 문서로 답할 수 없는 범위(개인정보 요구, 일반상식, 문서와 무관한 주제 등)다.
+- "insufficient" : 질문은 RFP 사실 조회로 답할 수 있는 종류인데, 청크에 근거가 부족하거나 무관하다(재검색하면 나아질 수 있음).
+- "out_of_scope" : 질문 자체가 이 시스템(제공된 RFP 문서의 정보 조회·요약·추출 전용)으로 답할 수 없는 범위다. 다음은 모두 out_of_scope이며, 청크가 검색되었어도 재검색하지 말고 out_of_scope로 판정하라:
+    · 입찰 결과·낙찰 업체·실제 계약 금액 등 RFP 공고 이후의 결과 정보
+    · 미래에 공고될 예정인 사업 등 문서에 존재할 수 없는 정보
+    · 자사(입찰메이트) 또는 RFP 발주와 무관한 외부 기업·기관에 대한 질문
+    · 뉴스·평판 등 RFP 외부의 일반 정보
+    · 개인 휴대폰번호·주민등록번호 등 마스킹된 개인정보 요구
+    · 특정 담당자 조회가 아닌, 담당자 명단 전체의 일괄·전수 요구
+    · 코드 작성, 제안서 대필 등 정보 조회가 아닌 작업 수행 요구
+    · RFP와 무관한 일반 상식·잡담
 
 반드시 아래 JSON 한 줄만 출력하라. 다른 말 금지.
 {"grade": "sufficient" | "insufficient" | "out_of_scope"}"""
@@ -36,6 +45,22 @@ def _docs_to_text(docs: list, max_chars: int = 2000) -> str:
         parts.append(f"[청크 {i}] {d.page_content}")
     text = "\n".join(parts)
     return text[:max_chars]
+
+
+# 집계형(열거·개수·최상위) 질문의 언어 신호. 이런 질문은 넓은 문서 범위가 필요하다.
+_AGGREGATION_KEYWORDS = ("모두", "모든", "전부", "전체", "가장", "몇 건", "몇건", "목록", "리스트")
+
+
+def _is_aggregation_query(question: str) -> bool:
+    """질문이 여러 문서를 훑어야 하는 집계형인지 키워드로 판별한다.
+
+    Args:
+        question: 사용자 질문(재구성 질문 우선).
+    Returns:
+        bool: 집계형이면 True.
+    """
+    return any(kw in question for kw in _AGGREGATION_KEYWORDS)
+
 
 
 def grade_node(state) -> dict:
@@ -73,6 +98,12 @@ def grade_node(state) -> dict:
         if grade not in ("sufficient", "insufficient", "out_of_scope"):
             grade = "sufficient"
     except (json.JSONDecodeError, AttributeError):
+        grade = "sufficient"
+
+    # 집계형 질문(열거·개수·최상위)은 넓은 문서 범위가 필요한데, 재검색은 문서를 좁혀
+    # 정답 문서를 밀어내 오히려 정답 정확도를 낮춘다. 이 경우 insufficient여도 재검색을
+    # 억제하도록 sufficient로 본다. out_of_scope(거부)는 그대로 유지한다.
+    if grade == "insufficient" and _is_aggregation_query(question):
         grade = "sufficient"
 
     return {"grade": grade, "retry_count": retry_count}

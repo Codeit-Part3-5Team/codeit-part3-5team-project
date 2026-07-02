@@ -299,9 +299,19 @@ def main():
         }
 
     # 4) 메타+점수 저장 + 콘솔 요약
+    #    생성 모델을 meta에서 읽어 저장 파일명·기록에 반영(모델별 결과 덮어쓰기 방지).
+    #    gpt 생성이면 ollama_model이 없으므로 "gpt-5-mini"로 표기.
+    gen_model = gen_meta.get("ollama_model") or "gpt-5-mini"
+    model_tag = re.sub(r"[^0-9A-Za-z._-]", "-", gen_model)   # 파일명 안전화(콜론 등 → 하이픈)
+    # 재검색 전략(precision/recall)을 파일명에 반영해 case별 결과가 덮어써지지 않게 함
+    # 재검색 전략은 agentic_rag일 때만 파일명에 반영(naive는 meta에 잔여 strategy가 있어도 무시).
+    retriever_type = gen_meta.get("retriever_type")
+    strategy = gen_meta.get("re_retrieve_strategy") if retriever_type == "agentic_rag" else None
+    strategy_tag = f"_{strategy}" if strategy else ""
     metrics = {
         "evaluated_at": datetime.now().isoformat(timespec="seconds"),
         "prompt_version": prompt_version,
+        "gen_model": gen_model,                  # 답변 생성 모델(모델 비교 구분용)
         "source_samples": args.samples,
         "generated_at": gen_meta.get("generated_at"),
         "generation_tokens": gen_meta.get("total_tokens"),
@@ -312,6 +322,7 @@ def main():
         "scores": {
             "faithfulness": gen_scores["faithfulness"],
             "answer_relevancy": gen_scores["answer_relevancy"],
+            "answer_correctness": gen_scores["answer_correctness"],
             "ragas_score": gen_scores["ragas_score"],
             "rouge1": text_scores["rouge1"],
             "rougeL": text_scores["rougeL"],
@@ -325,16 +336,19 @@ def main():
         metrics["refusal_judge"] = refusal_judge
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    metrics_path = RESULTS_DIR / f"metrics_{prompt_version}.json"
+    # 파일명에 모델 태그를 붙여 모델별로 분리 저장(gpt면 metrics_system_v3_gpt-5-mini.json 등)
+    metrics_path = RESULTS_DIR / f"metrics_{prompt_version}_{model_tag}{strategy_tag}.json"
     with open(metrics_path, "w", encoding="utf-8") as f:
         json.dump(metrics, f, ensure_ascii=False, indent=2)
 
     # 콘솔 요약(1차 기록은 metrics json, 아래는 눈으로 확인용)
     print("\n========== 평가 요약 ==========")
-    print(f"prompt_version : {prompt_version}   (생성품질 채점 = 비거부 {len(non_refusal)}건)")
-    print(f"Faithfulness   : {metrics['scores']['faithfulness']}   (목표 >=0.75)")
-    print(f"AnswerRelevance: {metrics['scores']['answer_relevancy']}   (목표 >=0.75)")
-    print(f"RAGAS-Score    : {metrics['scores']['ragas_score']}   (목표 >=0.70)")
+    print(f"생성 모델      : {gen_model}   (prompt={prompt_version})")
+    print(f"채점 대상      : 비거부 {len(non_refusal)}건")
+    print(f"Faithfulness   : {metrics['scores']['faithfulness']}   (주력)")
+    print(f"AnswerCorrect. : {metrics['scores']['answer_correctness']}   (주력)")
+    print(f"RAGAS-Score    : {metrics['scores']['ragas_score']}   (= (faith+ac)/2)")
+    print(f"AnswerRelevance: {metrics['scores']['answer_relevancy']}   (참고)")
     print(f"ROUGE-1 / L    : {metrics['scores']['rouge1']} / {metrics['scores']['rougeL']}   (보조)")
     print(f"BLEU           : {metrics['scores']['bleu']}   (보조)")
     print(f"BERTScore-F1   : {metrics['scores']['bertscore_f1']}   (보조)")

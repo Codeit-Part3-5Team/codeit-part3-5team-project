@@ -16,7 +16,7 @@ ragas 라이브러리로 산출하며, 채점자(judge)는 gpt-5-mini다.
 from utils.config import load_config            # config.yaml 읽기
 # ragas 0.4.x 기준 import 경로 (버전 다르면 경로 바뀔 수 있음)
 from ragas import evaluate, EvaluationDataset, SingleTurnSample
-from ragas.metrics import Faithfulness, ResponseRelevancy
+from ragas.metrics import Faithfulness, ResponseRelevancy, AnswerCorrectness  # AC 추가(정답 정확도)
 from ragas.llms import llm_factory
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from langchain_openai import OpenAIEmbeddings
@@ -101,21 +101,24 @@ def evaluate_generation(samples: list[dict], config: dict = None) -> dict:
     # ragas 평가 실행 (채점자 = gpt-5-mini)
     result = evaluate(
         dataset=dataset,
-        metrics=[Faithfulness(), ResponseRelevancy()],
+        metrics=[Faithfulness(), ResponseRelevancy(), AnswerCorrectness()],  # AC 추가
         llm=judge_llm,
         embeddings=judge_emb,
     )
 
-    # 건별 결과를 DataFrame으로 받아 평균 산출 (실패 케이스 분석 위해 건별도 보존)
     df = result.to_pandas()
     faith = round(df["faithfulness"].mean(), 4)
-    ar = round(df["answer_relevancy"].mean(), 4)
-    ragas_score = round((faith + ar) / 2, 4)     # A안: 생성 2개 평균
+    ar = round(df["answer_relevancy"].mean(), 4)         # 참고 지표(composite 미포함)
+    ac = round(df["answer_correctness"].mean(), 4)       # 정답 정확도(주력)
+    # composite = Faithfulness + Answer Correctness 평균. AR은 RFP 간결추출형에서
+    # 구조적으로 낮아 composite에서 제외하고 참고 지표로만 보고한다.
+    ragas_score = round((faith + ac) / 2, 4)
 
     return {
         "faithfulness": faith,
-        "answer_relevancy": ar,
-        "ragas_score": ragas_score,
+        "answer_relevancy": ar,          # 참고용(composite 미포함)
+        "answer_correctness": ac,        # 주력(composite 포함)
+        "ragas_score": ragas_score,      # = (faith + ac)/2
         "per_sample": df.to_dict(orient="records"),
     }
 

@@ -5,6 +5,7 @@ from langchain_ollama import ChatOllama
 # load_dotenv: .env에서 OPENAI_API_KEY, OLLAMA_BASE_URL 불러오기
 from dotenv import load_dotenv
 import os
+import re
 
 # .env 로드 (OPENAI_API_KEY, OLLAMA_BASE_URL을 환경변수로 올림)
 load_dotenv()
@@ -35,18 +36,29 @@ def call_gpt(messages: list[dict], model: str = "gpt-5-mini") -> tuple[str, int]
 # messages: call_gpt와 동일한 [{"role": ..., "content": ...}] 형식
 # model: Ollama 모델명 (예: "llama3.2", "qwen3:8b"). 없으면 기본값 사용
 # 반환: (답변 텍스트, 토큰 수) — call_gpt와 입출력 형식 통일
+def _strip_thinking(text: str) -> str:
+    """추론형 모델(qwen3.5 등)의 사고 과정 텍스트가 답변에 새어나온 경우 제거한다.
+    'Thinking...' ~ '...done thinking.' 구간과 <think>...</think> 태그를 걷어낸다(이중 안전장치)."""
+    if not text:
+        return text
+    text = re.sub(r"Thinking\.\.\..*?\.\.\.done thinking\.", "", text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL | re.IGNORECASE)
+    return text.strip()
+
+
 def call_ollama(messages: list[dict], model: str = "llama3.2") -> tuple[str, int]:
     # GCP Ollama 서버 주소는 .env의 OLLAMA_BASE_URL에서 읽음 (하드코딩 방지)
     base_url = os.getenv("OLLAMA_BASE_URL")
 
     # ChatOllama 클라이언트 생성 (GCP 서버의 모델을 호출)
-    client = ChatOllama(model=model, base_url=base_url)
+    # reasoning=False: 추론형 모델(qwen3.5 등)의 thinking 단계를 꺼 답변만 받도록 함
+    client = ChatOllama(model=model, base_url=base_url, reasoning=False)
 
     # 호출: messages(dict 리스트)를 그대로 넘기면 LangChain이 처리
     response = client.invoke(messages)
 
-    # 답변 본문 추출 (LangChain 응답은 .content에 텍스트가 들어있음)
-    answer = response.content
+    # 답변 본문 추출 후, 혹시 남은 사고 과정 텍스트를 제거(이중 안전장치)
+    answer = _strip_thinking(response.content)
 
     # 토큰 수: Ollama 응답 메타데이터에서 추출 시도 (없으면 0)
     # gpt와 달리 Ollama는 토큰 정보를 항상 주지는 않아서 안전하게 처리

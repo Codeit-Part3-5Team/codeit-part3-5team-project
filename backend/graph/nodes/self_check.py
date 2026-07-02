@@ -78,10 +78,10 @@ def self_check_node(state) -> dict:
             "docs": [],
         }
 
-    # ③ 거부 답변인데 출처가 붙은 모순: 출처 줄 제거 + docs 비우기.
-    #    답변 본문(거부)은 옳으므로 유지하되, 출처 표기와 sources(docs)를 함께 비워
-    #    "못 찾았다면서 출처 N개 노출"되는 모순을 답변·sources 양쪽에서 없앤다.
-    is_refusal = any(m in answer for m in _REFUSAL_MARKERS)
+    #    거부 문구는 답변 첫 줄에서만 검사한다(집계형 답변의 하위 필드 "…찾을 수 없습니다"를
+    #    전체 거부로 오판해 정상 답변의 docs를 비우는 것을 방지).
+    first_line = answer.strip().split("\n", 1)[0]
+    is_refusal = any(m in first_line for m in _REFUSAL_MARKERS)
     if is_refusal and "[출처" in answer:
         return {
             "check_passed": True,           # 답변 자체는 정상(거부가 옳음)

@@ -49,19 +49,19 @@ def convert_history(golden_history: list[dict]) -> list[dict]:
     return messages
 
 
-def load_golden(config: dict) -> list[dict]:
+def load_golden(config: dict, golden_path: str = None) -> list[dict]:
     """
-    config의 골든셋 경로에서 골든셋을 로드한다.
+    골든셋을 로드한다. golden_path를 주면 그 경로를, 없으면 config 경로를 쓴다.
 
     Args:
-        config: 설정 dict (evaluation.golden_dataset_path 사용)
+        config     : 설정 dict (evaluation.golden_dataset_path 사용)
+        golden_path: 골든셋 파일 경로(선택). 주면 config보다 우선(표본셋 주입용).
     Returns:
         list[dict]: 골든셋 문항 리스트
     """
-    path = config["evaluation"]["golden_dataset_path"]   # 예: ./data/golden/golden_dataset_v3.json
+    path = golden_path or config["evaluation"]["golden_dataset_path"]
     with open(path, encoding="utf-8") as f:
         return json.load(f)
-
 
 def build_samples(golden_items: list[dict], config: dict,
                   use_ollama: bool = False) -> tuple[list[dict], dict]:
@@ -134,6 +134,8 @@ def main():
                         help="Ollama로 답변 생성(트랙②). 기본은 gpt-5-mini.")
     parser.add_argument("--ollama-model", type=str, default=None,
                         help="Ollama 모델명(트랙②, 예: qwen3:8b). 지정 시 config.ollama_model 덮어씀.")
+    parser.add_argument("--golden", type=str, default=None,
+                        help="골든셋 파일 경로(선택). 지정 시 config 경로 대신 사용(표본셋 주입용).")
     args = parser.parse_args()
 
     config = load_config()
@@ -144,7 +146,7 @@ def main():
     prompt_version = config.get("prompt_version", "system_v2")   # top-level에서 읽음(트랙③ 전환)
 
     # 1) 골든셋 로드 + (테스트면) 건수 제한
-    golden = load_golden(config)
+    golden = load_golden(config, args.golden)
     if args.limit is not None:
         golden = golden[:args.limit]
     print(f"[1] 골든셋 로드: {len(golden)}건 "
@@ -162,6 +164,11 @@ def main():
         tag = f"{prompt_version}_ollama_{model_tag}"
     else:
         tag = prompt_version
+    # 재검색 전략은 agentic_rag일 때만 파일명 태그에 반영(naive_rag는 재검색이 없어 전략 무의미).
+    if config.get("retriever_type") == "agentic_rag":
+        strategy = config.get("re_retrieve_strategy")
+        if strategy:
+            tag = f"{tag}_{strategy}"
     samples_path = RESULTS_DIR / f"samples_{tag}.json"
 
     # 생성 메타도 함께 저장(보고서 기록·토큰 추적용)
@@ -172,6 +179,8 @@ def main():
             "use_ollama": args.use_ollama,
             "ollama_model": config.get("ollama_model") if args.use_ollama else None,
             "limit": args.limit,
+            "retriever_type": config.get("retriever_type"),          # naive_rag / agentic_rag
+            "re_retrieve_strategy": config.get("re_retrieve_strategy"),  # precision / recall (재검색 case 구분)
             "total_tokens": gen_meta["total_tokens"],
             "total_elapsed_sec": gen_meta["total_elapsed_sec"],
             "count": gen_meta["count"],
